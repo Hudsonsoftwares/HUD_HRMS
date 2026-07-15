@@ -37,16 +37,27 @@ class HrPayslip(models.Model):
             contract_ids[0].id).employee_id if contract_ids \
             else self.employee_id
         advance_salary = self.env['salary.advance'].search(
-            [('employee_id', '=', employee_id.id)])
+            [('employee_id', '=', employee_id.id), ('state', '=', 'approve')])
+        total_advance = 0.0
         for record in advance_salary:
-            current_date = date_from.month
-            date = record.date
-            existing_date = date.month
-            if current_date == existing_date:
-                state = record.state
-                amount = record.advance
-                for result in res:
-                    if state == 'approve' and amount != 0 and result.get(
-                            'code') == 'SAR':
-                        result['amount'] = amount
+            if (record.advance and record.date and
+                    record.date.year == date_from.year and
+                    record.date.month == date_from.month):
+                total_advance += record.advance
+        if total_advance:
+            sar_found = False
+            for result in res:
+                if result.get('code') == 'SAR':
+                    result['amount'] = total_advance
+                    sar_found = True
+                    break
+            if not sar_found:
+                res.append({
+                    'name': 'Salary Advance',
+                    'code': 'SAR',
+                    'amount': total_advance,
+                    'contract_id': contract_ids[0].id if contract_ids else False,
+                    'date_from': date_from,
+                    'date_to': date_to,
+                })
         return res
