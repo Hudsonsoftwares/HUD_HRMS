@@ -707,3 +707,54 @@ class HrPayslip(models.Model):
                 [('name', '=', 'Meal Voucher')]).salary_rule_id.write(
                 {'quantity': self.worked_days_line_ids.number_of_days})
         return
+
+    def action_send_payslip_email(self):
+        self.ensure_one()
+        import base64
+        if not self.employee_id:
+            raise ValidationError(_("Please select an employee first."))
+        email = self.employee_id.work_email or self.employee_id.private_email
+        if not email:
+            raise ValidationError(_("Please configure an email address for employee %s.") % self.employee_id.name)
+
+        # Render the PDF report
+        report = self.env['ir.actions.report'].sudo()._render_qweb_pdf(
+            'hr_payroll_community.hr_payslip_report_action', self.ids)
+        data_record = base64.b64encode(report[0])
+
+        # Create attachment
+        attachment_values = {
+            'name': _('Payslip - %s.pdf') % self.employee_id.name,
+            'type': 'binary',
+            'datas': data_record,
+            'mimetype': 'application/pdf',
+            'res_model': 'hr.payslip',
+            'res_id': self.id,
+        }
+        attachment = self.env['ir.attachment'].sudo().create(attachment_values)
+
+        # Create mail
+        mail_values = {
+            'subject': _('Payslip for %s - %s') % (self.employee_id.name, self.name),
+            'email_to': email,
+            'body_html': _(
+                '<p>Dear <strong>%s</strong>,</p>'
+                '<p>Please find attached your payslip for the period %s.</p>'
+                '<p>Best regards,<br/>%s</p>'
+            ) % (self.employee_id.name, self.name, self.env.user.name),
+            'attachment_ids': [attachment.id],
+        }
+        mail = self.env['mail.mail'].sudo().create(mail_values)
+        mail.send()
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Email Sent'),
+                'message': _('Payslip email has been sent successfully to %s.') % email,
+                'type': 'success',
+                'sticky': False
+            }
+        }
+

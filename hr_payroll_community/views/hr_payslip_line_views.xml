@@ -97,6 +97,10 @@
                     <button string="Cancel Payslip" name="action_payslip_cancel"
                             type="object"
                             invisible="state in ('draft','hr_check','confirm','verify','cancel')"/>
+                    <button string="Send Email" name="action_send_payslip_email"
+                            type="object"
+                            invisible="state != 'done'"
+                            class="oe_highlight"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,confirm"/>
                 </header>
