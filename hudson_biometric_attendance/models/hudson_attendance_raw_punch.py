@@ -85,9 +85,19 @@ class HudsonAttendanceRawPunch(models.Model):
             try:
                 with self.env.cr.savepoint():
                     # 1. Resolve Employee
-                    employee = self.env['hr.employee'].search([
-                        ('biometric_code', '=', punch.employee_code)
-                    ], limit=1)
+                    employee = False
+                    if punch.device_id:
+                        mapping = self.env['hudson.attendance.employee.mapping'].search([
+                            ('device_id', '=', punch.device_id.id),
+                            ('external_employee_code', '=', punch.employee_code)
+                        ], limit=1)
+                        if mapping:
+                            employee = mapping.employee_id
+
+                    if not employee:
+                        employee = self.env['hr.employee'].search([
+                            ('biometric_code', '=', punch.employee_code)
+                        ], limit=1)
 
                     if not employee:
                         # Fallback: check standard Odoo barcode
@@ -96,6 +106,12 @@ class HudsonAttendanceRawPunch(models.Model):
                         ], limit=1)
 
                     if not employee:
+                        self.env['hudson.attendance.anomaly'].create({
+                            'name': 'Unmapped Employee Code',
+                            'anomaly_type': 'unmapped_employee',
+                            'raw_punch_id': punch.id,
+                            'description': f"No employee resolved for code '{punch.employee_code}' from device '{punch.device_id.name or 'Unknown'}'."
+                        })
                         punch.write({
                             'state': 'unmapped',
                             'error_message': _("No employee found with Biometric/Attendance Code or Barcode match: %s") % punch.employee_code
@@ -106,23 +122,32 @@ class HudsonAttendanceRawPunch(models.Model):
                     # Check unique external transaction ID if provided
                     if punch.external_uid:
                         duplicate_uid = self.search([
+                            ('device_id', '=', punch.device_id.id or False),
                             ('external_uid', '=', punch.external_uid),
                             ('id', '!=', punch.id),
                             ('state', 'in', ('processed', 'duplicate'))
                         ], limit=1)
                         if duplicate_uid:
+                            self.env['hudson.attendance.anomaly'].create({
+                                'name': 'Duplicate Punch (External ID)',
+                                'anomaly_type': 'duplicate_punch',
+                                'employee_id': employee.id,
+                                'raw_punch_id': punch.id,
+                                'description': f"Duplicate check-in detected with UID {punch.external_uid}."
+                            })
                             punch.write({
                                 'state': 'duplicate',
-                                'error_message': _("Duplicate check failed: External Unique ID %s already processed.") % punch.external_uid
+                                'error_message': _("Duplicate check failed: External Unique ID %s already processed on device.") % punch.external_uid
                             })
                             continue
 
-                    # Check for temporal duplicate (same employee, type, and within 5 seconds)
+                    # Check for temporal duplicate (same employee, device, type, and within 5 seconds)
                     time_margin = 5
                     start_time = punch.punch_time - timedelta(seconds=time_margin)
                     end_time = punch.punch_time + timedelta(seconds=time_margin)
 
                     duplicate_time = self.search([
+                        ('device_id', '=', punch.device_id.id or False),
                         ('employee_code', '=', punch.employee_code),
                         ('punch_time', '>=', start_time),
                         ('punch_time', '<=', end_time),
@@ -132,6 +157,13 @@ class HudsonAttendanceRawPunch(models.Model):
                     ], limit=1)
 
                     if duplicate_time:
+                        self.env['hudson.attendance.anomaly'].create({
+                            'name': 'Duplicate Punch (Temporal)',
+                            'anomaly_type': 'duplicate_punch',
+                            'employee_id': employee.id,
+                            'raw_punch_id': punch.id,
+                            'description': f"Duplicate punch within 5-second tolerance detected for employee at {punch.punch_time}."
+                        })
                         punch.write({
                             'state': 'duplicate',
                             'error_message': _("Duplicate check failed: Similar punch already processed for employee at %s.") % punch.punch_time
@@ -168,6 +200,13 @@ class HudsonAttendanceRawPunch(models.Model):
 
                     elif is_check_out:
                         if not open_attendance:
+                            self.env['hudson.attendance.anomaly'].create({
+                                'name': 'Invalid Punch Sequence',
+                                'anomaly_type': 'invalid_sequence',
+                                'employee_id': employee.id,
+                                'raw_punch_id': punch.id,
+                                'description': f"Check-out registered for {employee.name} with no open check-in."
+                            })
                             punch.write({
                                 'state': 'failed',
                                 'error_message': _("No active check-in found for check-out punch of employee %s.") % employee.name

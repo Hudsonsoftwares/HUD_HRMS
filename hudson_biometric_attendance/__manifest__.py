@@ -19,9 +19,11 @@ into Odoo standard hr.attendance.
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
+        'wizard/hudson_attendance_map_reprocess_wizard_views.xml',
         'views/hr_employee_views.xml',
         'views/hudson_attendance_device_views.xml',
         'views/hudson_attendance_raw_punch_views.xml',
+        'views/hudson_biometric_integration_views.xml',
         'views/menus.xml',
     ],
     'installable': True,

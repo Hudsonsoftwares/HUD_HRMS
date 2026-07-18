@@ -159,3 +159,153 @@ class TestBiometricProcessing(TransactionCase):
         p_out_orphan._process_punch()
         self.assertEqual(p_out_orphan.state, 'failed')
         self.assertIn("No active check-in found", p_out_orphan.error_message)
+
+    def test_employee_mapping_resolution(self):
+        """Test employee mapping resolution using hudson.attendance.employee.mapping."""
+        # Create an employee mapping
+        self.env['hudson.attendance.employee.mapping'].create({
+            'device_id': self.device.id,
+            'external_employee_code': 'EXT_EMP_999',
+            'employee_id': self.employee_1.id,
+        })
+
+        # Create punch with external code
+        punch = self.env['hudson.attendance.raw.punch'].create({
+            'device_id': self.device.id,
+            'employee_code': 'EXT_EMP_999',
+            'punch_time': datetime(2026, 7, 18, 9, 0, 0),
+            'punch_type': 'in',
+        })
+        punch._process_punch()
+        self.assertEqual(punch.state, 'processed')
+        self.assertEqual(punch.hr_attendance_id.employee_id, self.employee_1)
+
+    def test_unmapped_reprocess_wizard(self):
+        """Test unmapped raw punches wizard mapping and reprocessing."""
+        # Create unmapped punch
+        punch = self.env['hudson.attendance.raw.punch'].create({
+            'device_id': self.device.id,
+            'employee_code': 'UNMAPPED_CODE_100',
+            'punch_time': datetime(2026, 7, 18, 9, 0, 0),
+            'punch_type': 'in',
+        })
+        punch._process_punch()
+        self.assertEqual(punch.state, 'unmapped')
+
+        # Run wizard
+        wizard = self.env['hudson.attendance.map.reprocess.wizard'].with_context(
+            active_ids=[punch.id]
+        ).create({
+            'employee_id': self.employee_1.id,
+        })
+        wizard.action_map_and_reprocess()
+
+        # Check that mapping was created
+        mapping = self.env['hudson.attendance.employee.mapping'].search([
+            ('device_id', '=', self.device.id),
+            ('external_employee_code', '=', 'UNMAPPED_CODE_100')
+        ])
+        self.assertTrue(mapping)
+        self.assertEqual(mapping.employee_id, self.employee_1)
+
+        # Check punch was reprocessed
+        self.assertEqual(punch.state, 'processed')
+        self.assertTrue(punch.hr_attendance_id)
+
+    def test_field_and_value_mapping_rest_poll(self):
+        """Test field mapping dot-notation and value mapping translation."""
+        from unittest.mock import patch
+
+        # 1. Create Field Mappings
+        self.env['hudson.attendance.field.mapping'].create({
+            'device_id': self.device.id,
+            'src_path': 'data.punch_uid',
+            'target_field': 'external_uid',
+        })
+        self.env['hudson.attendance.field.mapping'].create({
+            'device_id': self.device.id,
+            'src_path': 'data.badge_id',
+            'target_field': 'employee_code',
+        })
+        self.env['hudson.attendance.field.mapping'].create({
+            'device_id': self.device.id,
+            'src_path': 'data.time_str',
+            'target_field': 'punch_time',
+        })
+        punch_type_mapping = self.env['hudson.attendance.field.mapping'].create({
+            'device_id': self.device.id,
+            'src_path': 'data.status_code',
+            'target_field': 'punch_type',
+        })
+
+        # 2. Create Value Mappings
+        self.env['hudson.attendance.value.mapping'].create({
+            'field_mapping_id': punch_type_mapping.id,
+            'src_value': 'IN_VAL_1',
+            'target_value': 'in',
+        })
+
+        # Configure REST Device
+        self.device.write({
+            'connection_type': 'rest_api',
+            'address': 'http://dummy-rest-endpoint.local/punches',
+        })
+
+        # Mock requests.get response
+        with patch('requests.get') as mock_get:
+            mock_get.return_value.status_code = 200
+            mock_get.return_value.json.return_value = {
+                "data": {
+                    "punch_uid": "REST_UID_8877",
+                    "badge_id": "BIO001",
+                    "time_str": "2026-07-18 09:00:00",
+                    "status_code": "IN_VAL_1",
+                }
+            }
+
+            self.device.sync_punches()
+
+        # Check raw punch created and processed
+        punch = self.env['hudson.attendance.raw.punch'].search([
+            ('external_uid', '=', 'REST_UID_8877')
+        ])
+        self.assertTrue(punch)
+        self.assertEqual(punch.employee_code, 'BIO001')
+        self.assertEqual(punch.punch_type, 'in')
+        self.assertEqual(punch.state, 'processed')
+
+    def test_anomalies_and_regularization_workflow(self):
+        """Test anomaly generation and regularization request approval/applying."""
+        # Create an attendance exceeding 12 hours to trigger Unusual Hours anomaly
+        att = self.env['hr.attendance'].with_context(biometric_punch_processing=True).create({
+            'employee_id': self.employee_1.id,
+            'check_in': datetime(2026, 7, 18, 8, 0, 0),
+            'check_out': datetime(2026, 7, 18, 22, 0, 0),  # 14 hours
+        })
+
+        anomaly = self.env['hudson.attendance.anomaly'].search([
+            ('attendance_id', '=', att.id),
+            ('anomaly_type', '=', 'unusual_hours')
+        ])
+        self.assertTrue(anomaly)
+
+        # Create Regularization request
+        reg = self.env['hudson.attendance.regularization'].create({
+            'employee_id': self.employee_1.id,
+            'anomaly_id': anomaly.id,
+            'attendance_id': att.id,
+            'corrected_check_in': datetime(2026, 7, 18, 8, 0, 0),
+            'corrected_check_out': datetime(2026, 7, 18, 17, 0, 0),  # Corrected to 9 hours
+            'reason': 'Forgot to check out on time, left at 5 PM.',
+        })
+
+        self.assertEqual(reg.state, 'draft')
+        reg.action_submit()
+        self.assertEqual(reg.state, 'submitted')
+        reg.action_approve()
+        self.assertEqual(reg.state, 'approved')
+        reg.action_apply()
+        self.assertEqual(reg.state, 'applied')
+
+        # Check attendance was updated
+        self.assertEqual(att.check_out, datetime(2026, 7, 18, 17, 0, 0))
