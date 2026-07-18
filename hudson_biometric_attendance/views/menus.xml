@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Biometric Integration Root Menu (under HR Attendance Root) -->
+    <menuitem id="menu_hudson_biometric_root"
+              name="Biometric Integration"
+              parent="hr_attendance.menu_hr_attendance_root"
+              sequence="30"
+              groups="group_biometric_attendance_user"/>
+
+    <!-- Devices Menu -->
+    <menuitem id="menu_hudson_attendance_device"
+              name="Biometric Devices"
+              parent="menu_hudson_biometric_root"
+              action="action_hudson_attendance_device"
+              sequence="10"
+              groups="group_biometric_attendance_manager"/>
+
+    <!-- Raw Punch Logs Menu -->
+    <menuitem id="menu_hudson_attendance_raw_punch_all"
+              name="Raw Punch Logs"
+              parent="menu_hudson_biometric_root"
+              action="action_hudson_attendance_raw_punch_all"
+              sequence="20"
+              groups="group_biometric_attendance_user"/>
+
+    <!-- Unmapped Punches Queue -->
+    <menuitem id="menu_hudson_attendance_raw_punch_unmapped"
+              name="Unmapped Punches"
+              parent="menu_hudson_biometric_root"
+              action="action_hudson_attendance_raw_punch_unmapped"
+              sequence="30"
+              groups="group_biometric_attendance_user"/>
+
+    <!-- Failed Punches Queue -->
+    <menuitem id="menu_hudson_attendance_raw_punch_failed"
+              name="Failed Punches"
+              parent="menu_hudson_biometric_root"
+              action="action_hudson_attendance_raw_punch_failed"
+              sequence="40"
+              groups="group_biometric_attendance_user"/>
+</odoo>

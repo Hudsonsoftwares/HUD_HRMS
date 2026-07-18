@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Form View -->
+    <record id="hr_payslip_view_form_inherit_attendance_bridge" model="ir.ui.view">
+        <field name="name">hr.payslip.view.form.inherit.attendance.bridge</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll_community.hr_payslip_view_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <field name="has_attendance_discrepancy" invisible="1"/>
+                <button name="action_view_attendance_discrepancy"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-warning"
+                        invisible="not has_attendance_discrepancy">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="attendance_discrepancy_string" readonly="1"/>
+                        </span>
+                        <span class="o_stat_text">Attendance Mismatch</span>
+                    </div>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <!-- Inherit Search View -->
+    <record id="hr_payslip_view_search_inherit_attendance_bridge" model="ir.ui.view">
+        <field name="name">hr.payslip.select.inherit.attendance.bridge</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll_community.hr_payslip_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='done']" position="after">
+                <separator/>
+                <filter string="Attendance Discrepancies" name="attendance_discrepancies"
+                        domain="[('has_attendance_discrepancy', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Overtime Salary Rule -->
+    <record id="hr_rule_attendance_overtime" model="hr.salary.rule">
+        <field name="name">Overtime Payment (Attendance)</field>
+        <field name="sequence" eval="25"/>
+        <field name="code">OVERTIME</field>
+        <field name="category_id" ref="hr_payroll_community.ALW"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = worked_days.OVERTIME and worked_days.OVERTIME.number_of_hours > 0</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = worked_days.OVERTIME.number_of_hours * (contract.wage / 240.0) * 1.5</field>
+    </record>
+
+    <!-- Shortage Salary Rule -->
+    <record id="hr_rule_attendance_shortage" model="hr.salary.rule">
+        <field name="name">Shortage Deduction (Attendance)</field>
+        <field name="sequence" eval="26"/>
+        <field name="code">SHORTAGE</field>
+        <field name="category_id" ref="hr_payroll_community.DED"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = worked_days.SHORTAGE and worked_days.SHORTAGE.number_of_hours > 0</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -worked_days.SHORTAGE.number_of_hours * (contract.wage / 240.0)</field>
+    </record>
+
+    <!-- Link to Base Structure -->
+    <record id="hr_payroll_community.structure_base" model="hr.payroll.structure">
+        <field name="rule_ids" eval="[(4, ref('hr_rule_attendance_overtime')), (4, ref('hr_rule_attendance_shortage'))]"/>
+    </record>
+</odoo>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Form View -->
+    <record id="hr_payslip_view_form_inherit_ot_short" model="ir.ui.view">
+        <field name="name">hr.payslip.view.form.inherit.ot.short</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll_community.hr_payslip_view_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <field name="has_attendance_discrepancy" invisible="1"/>
+                <button name="action_view_attendance_discrepancy"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-exclamation-triangle"
+                        invisible="not has_attendance_discrepancy">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="attendance_discrepancy_string" readonly="1"/>
+                        </span>
+                        <span class="o_stat_text">Attendance Mismatch</span>
+                    </div>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <!-- Inherit Search View -->
+    <record id="hr_payslip_view_search_inherit_ot_short" model="ir.ui.view">
+        <field name="name">hr.payslip.select.inherit.ot.short</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll_community.hr_payslip_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='done']" position="after">
+                <separator/>
+                <filter string="Attendance Discrepancies" name="attendance_discrepancies"
+                        domain="[('has_attendance_discrepancy', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
