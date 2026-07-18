@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="hudson_theme_toggle_layout" inherit_id="web.layout">
+        <xpath expr="//head" position="inside">
+            <script type="text/javascript">
+                (function() {
+                    const cookies = document.cookie.split(';').map(c => c.trim());
+                    if (cookies.includes('hudson_dark_mode=true')) {
+                        document.documentElement.classList.add('o_dark_mode');
+                    } else {
+                        document.documentElement.classList.remove('o_dark_mode');
+                    }
+                })();
+            </script>
+        </xpath>
+    </template>
+</odoo>

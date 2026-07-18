@@ -17,29 +17,11 @@
     --ohrms-core-close-filter: none;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --ohrms-core-systray-color: #ffffff;
-        --ohrms-core-systray-bg: rgba(255, 255, 255, 0.12);
-        --ohrms-core-modal-bg: #1f2937;
-        --ohrms-core-modal-body-bg: #111827;
-        --ohrms-core-text-color: #f3f4f6;
-        --ohrms-core-muted-border: #4b5563;
-        --ohrms-core-input-bg: #1f2937;
-        --ohrms-core-input-color: #f9fafb;
-        --ohrms-core-input-shadow: rgba(0, 0, 0, 0.3);
-        --ohrms-core-attachment-border: #6b7280;
-        --ohrms-core-payload-bg: #030712;
-        --ohrms-core-payload-color: #f3f4f6;
-        --ohrms-core-dialog-shadow: rgba(0, 0, 0, 0.55);
-        --ohrms-core-close-filter: invert(1) grayscale(100%) brightness(200%);
-    }
-}
-
 [data-bs-theme="dark"],
 [data-theme="dark"],
 .o_web_client.o_dark,
-body.o_dark {
+body.o_dark,
+html.o_dark_mode {
     --ohrms-core-systray-color: #ffffff;
     --ohrms-core-systray-bg: rgba(255, 255, 255, 0.12);
     --ohrms-core-modal-bg: #1f2937;

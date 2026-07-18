@@ -4,7 +4,7 @@ overflow: auto !important;
 
 .oh_dashboards{
     padding-top :15px;
-    background-color: #f8faff !important;
+    background-color: var(--body-bg) !important;
 }
 
 .oh-card h4 {
@@ -1208,3 +1208,153 @@ h4 .stat-count {
 .address p {
     color: black !important;
 }
+
+/*======================================================================
+  DARK MODE SUPPORT OVERRIDES
+======================================================================*/
+.o_dark_mode .oh_dashboards {
+    background-color: var(--body-bg, #1a1d24) !important;
+}
+
+.o_dark_mode .stat-widget-one {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .stat-widget-one .stat-digit {
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .stat-widget-one .stat-text {
+    color: #a0aec0 !important;
+}
+
+.o_dark_mode .leave-manager {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .hr-chart-1 {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .monthly_leave_trend {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .monthly_leave_trend .oh-card {
+    background-color: transparent !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .monthly_join_resign_trend .oh-card {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .monthly_attrition_rate .oh-card {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .user_expense .oh-card,
+.o_dark_mode .user_leaves .oh-card,
+.o_dark_mode .user_attendance .oh-card,
+.o_dark_mode .projects .oh-card {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .user_expense .stat_head,
+.o_dark_mode .user_leaves .stat_head,
+.o_dark_mode .user_attendance .stat_head,
+.o_dark_mode .projects .stat_head {
+    color: var(--body-color, #f9fafb) !important;
+    border-bottom: 1px solid var(--o-border-color, #4a5568) !important;
+}
+
+.o_dark_mode .expense_table,
+.o_dark_mode .leaves_table,
+.o_dark_mode .attendance_table,
+.o_dark_mode .projects_table {
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .stat-head {
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .hr_notification {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .hr_notification-head {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+    border-bottom: 1px solid var(--o-border-color, #4a5568) !important;
+}
+
+.o_dark_mode .hr_notification .media {
+    border-bottom: 1px solid var(--o-border-color, #4a5568) !important;
+}
+
+.o_dark_mode .hr_notification p {
+    color: #a0aec0 !important;
+}
+
+.o_dark_mode .days_left {
+    color: #a0aec0 !important;
+}
+
+.o_dark_mode .birthday {
+    color: #f6ad55 !important;
+}
+
+.o_dark_mode .hr_birthday {
+    color: #a0aec0 !important;
+}
+
+.o_dark_mode .employee_prof {
+    background-color: var(--o-view-background, #212529) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .employee_prof .employee_name p {
+    color: #a0aec0 !important;
+}
+
+.o_dark_mode .employee_experience {
+    background-color: var(--o-border-color, #2d3748) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .employee_experience p {
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .contact {
+    background-color: var(--o-border-color, #2d3748) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .contact p {
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .address {
+    background-color: var(--o-border-color, #2d3748) !important;
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode .address p {
+    color: var(--body-color, #f9fafb) !important;
+}
+
+.o_dark_mode #broad_factor_pdf {
+    background-color: var(--o-view-background, #212529) !important;
+    color: #4ec3b7 !important;
+}
+

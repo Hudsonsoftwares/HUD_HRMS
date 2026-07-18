@@ -1,0 +1,214 @@
+html.o_dark_mode {
+    // 1. Core Color Scheme
+    color-scheme: dark !important;
+
+    // 2. Bootstrap & Odoo Base Variables
+    --body-bg: #121214;
+    --body-bg-rgb: 18, 18, 20;
+    --body-color: #e2e8f0;
+    --body-color-rgb: 226, 232, 240;
+
+    --o-view-background: #18181b;
+    --o-view-background-color: #18181b;
+    --o-main-text-color: #f4f4f5;
+
+    // 3. Control Panel & Top Navigation Bar
+    --o-control-panel-background: #18181b;
+    --o-navbar-background: #121214;
+    --o-navbar-color: #f4f4f5;
+    --o-navbar-border-color: #27272a;
+
+    // 4. Card Elements & Kanban
+    --o-card-background: #18181b;
+    --o-kanban-background: #18181b;
+
+    // 5. Forms and Sheet Layout
+    --o-form-sheet-background: #18181b;
+    --o-form-sheet-bg: #18181b;
+    --o-form-sheet-color: #f4f4f5;
+    
+    // 6. Borders and Dividers
+    --o-border-color: #27272a;
+    --border-color: #27272a;
+    --bs-border-color: #27272a;
+    --divider-color: #27272a;
+
+    // 7. Inputs & Forms fields
+    --o-input-background-color: #27272a;
+    --o-input-border-color: #3f3f46;
+    --o-input-text-color: #f4f4f5;
+
+    // 8. Popups, Dropdowns & Modals
+    --o-dropdown-background: #18181b;
+    --o-dropdown-color: #f4f4f5;
+    --o-modal-background: #18181b;
+    
+    // Bootstrap specific variables
+    --bs-body-bg: #121214;
+    --bs-body-bg-rgb: 18, 18, 20;
+    --bs-body-color: #e2e8f0;
+    --bs-body-color-rgb: 226, 232, 240;
+    --bs-tertiary-bg: #1e1e24;
+    --bs-secondary-bg: #1e1e24;
+
+    // Specific UI component overrides
+    // -------------------------------------------------------------
+
+    // Modals & Dialogs (Portal elements)
+    .modal-content {
+        background-color: #18181b !important;
+        color: #f4f4f5 !important;
+        border: 1px solid #27272a !important;
+    }
+    .modal-header, .modal-footer {
+        border-color: #27272a !important;
+        background-color: #121214 !important;
+        color: #f4f4f5 !important;
+    }
+    .modal-title {
+        color: #f4f4f5 !important;
+    }
+
+    // Dropdown menus & popovers
+    .dropdown-menu {
+        background-color: #18181b !important;
+        color: #f4f4f5 !important;
+        border: 1px solid #27272a !important;
+        
+        .dropdown-item {
+            color: #e2e8f0 !important;
+            &:hover, &:focus {
+                background-color: #27272a !important;
+                color: #f4f4f5 !important;
+            }
+            &.active, &:active {
+                background-color: #71639e !important;
+                color: #ffffff !important;
+            }
+        }
+    }
+
+    // Tooltips
+    .tooltip-inner {
+        background-color: #27272a !important;
+        color: #f4f4f5 !important;
+        border: 1px solid #3f3f46 !important;
+    }
+
+    // List view adjustments
+    .o_list_table {
+        background-color: #18181b !important;
+        color: #f4f4f5 !important;
+        tr {
+            background-color: #18181b !important;
+            color: #f4f4f5 !important;
+        }
+        thead tr {
+            background-color: #121214 !important;
+            color: #f4f4f5 !important;
+            border-bottom: 2px solid #27272a !important;
+        }
+        tbody tr:hover {
+            background-color: #27272a !important;
+        }
+        tbody tr.o_data_row {
+            border-bottom: 1px solid #27272a !important;
+        }
+    }
+
+    // Form sheet adjustments
+    .o_form_sheet {
+        background-color: #18181b !important;
+        border: 1px solid #27272a !important;
+        color: #f4f4f5 !important;
+    }
+
+    .o_form_view {
+        background-color: #121214 !important;
+    }
+
+    // Pivot Views
+    .o_pivot_view {
+        background-color: #18181b !important;
+        table.o_pivot_table {
+            background-color: #18181b !important;
+            color: #f4f4f5 !important;
+            th, td {
+                background-color: #18181b !important;
+                color: #f4f4f5 !important;
+                border: 1px solid #27272a !important;
+            }
+            th {
+                background-color: #121214 !important;
+            }
+        }
+    }
+
+    // Search panel
+    .o_search_panel {
+        background-color: #18181b !important;
+        border-right: 1px solid #27272a !important;
+    }
+
+    // Breadcrumbs and buttons
+    .breadcrumb-item a {
+        color: #9f8fcf !important; // readable primary shade under dark mode
+    }
+    .breadcrumb-item.active {
+        color: #a1a1aa !important;
+    }
+
+    // Input elements overrides
+    input.o_input, select.o_input, textarea.o_input {
+        background-color: #27272a !important;
+        color: #f4f4f5 !important;
+        border: 1px solid #3f3f46 !important;
+    }
+    
+    // Table overrides
+    .table {
+        --bs-table-bg: #18181b !important;
+        --bs-table-color: #f4f4f5 !important;
+        color: #f4f4f5 !important;
+    }
+
+    // Kiosk Mode screen overrides
+    .o_hr_attendance_kiosk_body {
+        background-color: #121214 !important;
+        color: #e2e8f0 !important;
+    }
+    .o_hr_attendance_kiosk {
+        background-color: #18181b !important;
+        color: #f4f4f5 !important;
+        border: 1px solid #27272a !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+    }
+    .o_hr_kiosk_mode_main {
+        background-color: #18181b !important;
+        color: #f4f4f5 !important;
+    }
+    .o_hr_kiosk_mode_bottom {
+        background-color: #121214 !important;
+        border-top: 1px solid #27272a !important;
+    }
+
+    // Toast and notification popups
+    .o_notification_manager {
+        .o_notification {
+            background-color: #27272a !important;
+            color: #f4f4f5 !important;
+            border: 1px solid #3f3f46 !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4) !important;
+            
+            .o_notification_title {
+                color: #ffffff !important;
+            }
+            .o_notification_close {
+                color: #a1a1aa !important;
+                &:hover {
+                    color: #ffffff !important;
+                }
+            }
+        }
+    }
+}

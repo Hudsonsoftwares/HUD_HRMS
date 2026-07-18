@@ -37,7 +37,7 @@
                             </t>
                             <t t-if="!this.state.login_employee['job_id']">
                                 <p class="text-light"
-                                   style="color:#b6b6b6 !important">Add job title</p>
+                                   style="color: var(--o-brand-secondary) !important">Add job title</p>
                             </t>
                         </div>
                         <div class="employee_experience">
@@ -48,39 +48,39 @@
                             </t>
                             <t t-if="!this.state.login_employee['experience']">
                                 <p class="text-light"
-                                   style="color:#b6b6b6 !important">Joined</p>
+                                   style="color: var(--o-brand-secondary) !important">Joined</p>
                                 <p class="text-light"
-                                   style="color:#b6b6b6 !important">Date</p>
+                                   style="color: var(--o-brand-secondary) !important">Date</p>
                                 <p class="text-light"
-                                   style="color:#b6b6b6 !important">--/--/----</p>
+                                   style="color: var(--o-brand-secondary) !important">--/--/----</p>
                             </t>
                         </div>
                         <div class="contact">
-                            <t t-if="this.state.login_employee['mobile_phone']">
+                             <t t-if="this.state.login_employee['mobile_phone']">
                                 <p>
-                                    <i class="fa fa-phone" style="padding-right: 8px;color: darkblue;"/>
+                                    <i class="fa fa-phone" style="padding-right: 8px;color: var(--o-brand-primary);"/>
                                     <t t-esc="this.state.login_employee['mobile_phone']"/>
                                 </p>
                             </t>
                             <t t-if="!this.state.login_employee['mobile_phone']">
-                                <i class="fa fa-phone" style="padding-right: 8px;color: darkblue;"/>
+                                <i class="fa fa-phone" style="padding-right: 8px;color: var(--o-brand-primary);"/>
                                 <p>---</p>
                             </t>
                             <t t-if="this.state.login_employee['work_email']">
                                 <p>
-                                    <i class="fa fa-envelope" style="padding-right: 8px;color: darkblue;"/>
+                                    <i class="fa fa-envelope" style="padding-right: 8px;color: var(--o-brand-primary);"/>
                                     <t t-esc="this.state.login_employee['work_email']"/>
                                 </p>
                             </t>
                             <t t-if="!this.state.login_employee['work_email']">
                                 <p>
-                                    <i class="fa fa-envelope" style="padding-right: 8px;color: darkblue;"/>
+                                    <i class="fa fa-envelope" style="padding-right: 8px;color: var(--o-brand-primary);"/>
                                     <p>---</p>
                                 </p>
                             </t>
                         </div>
                         <div class="address">
-                            <p><i class="fa fa-home" style="padding-right: 8px;color: darkblue;"/>Address
+                            <p><i class="fa fa-home" style="padding-right: 8px;color: var(--o-brand-primary);"/>Address
                                 :
                                 <t t-if="this.state.login_employee['private_street']">
                                     <t t-esc="this.state.login_employee['private_street']"/>
@@ -532,9 +532,9 @@
                         </t>
                         </t>
                         <t t-else="">
-                            <div class="text-center" style="padding: 20px; color: #6c757d;">
+                            <div class="text-center" style="padding: 20px; color: var(--o-brand-secondary);">
                                 <div style="font-size: 48px; margin-bottom: 10px;">🎂</div>
-                                <h4 style="margin-bottom: 8px; color: #495057;">No Upcoming Birthdays</h4>
+                                <h4 style="margin-bottom: 8px; color: var(--body-color);">No Upcoming Birthdays</h4>
                                 <p style="margin: 0; font-size: 14px;">There are no birthdays in the coming days.</p>
                             </div>
                         </t>
@@ -580,9 +580,9 @@
 
                         </t>
                         <t t-else="">
-                            <div class="text-center" style="padding: 20px; color: #6c757d;">
+                            <div class="text-center" style="padding: 20px; color: var(--o-brand-secondary);">
                                 <div style="font-size: 48px; margin-bottom: 10px;">📅</div>
-                                <h4 style="margin-bottom: 8px; color: #495057;">No Upcoming Events</h4>
+                                <h4 style="margin-bottom: 8px; color: var(--body-color);">No Upcoming Events</h4>
                                 <p style="margin: 0; font-size: 14px;">No events scheduled for the coming days.</p>
                             </div>
                         </t>
@@ -619,9 +619,9 @@
                             </t>
                         </t>
                         <t t-else="">
-                            <div class="text-center" style="padding: 20px; color: #6c757d;">
+                            <div class="text-center" style="padding: 20px; color: var(--o-brand-secondary);">
                                 <div style="font-size: 48px; margin-bottom: 10px;">📢</div>
-                                <h4 style="margin-bottom: 8px; color: #495057;">No Announcements</h4>
+                                <h4 style="margin-bottom: 8px; color: var(--body-color);">No Announcements</h4>
                                 <p style="margin: 0; font-size: 14px;">No announcements available at this time.</p>
                             </div>
                         </t>
