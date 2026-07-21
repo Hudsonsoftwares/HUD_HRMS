@@ -1,0 +1,61 @@
+.hudson-financial-report-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.hudson-report-sheet {
+    border-radius: 8px;
+    border: none;
+}
+
+.hudson-report-sheet table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.report-row-report {
+    cursor: default;
+    font-size: 1.05rem;
+}
+
+.report-row-account {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.report-row-account:hover {
+    background-color: rgba(0, 162, 232, 0.05) !important;
+}
+
+.report-row-account .drilldown-hint {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.report-row-account:hover .drilldown-hint {
+    opacity: 1;
+}
+
+.toggle-icon {
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+}
+
+.toggle-placeholder {
+    display: inline-block;
+    width: 20px;
+}
+
+.hudson-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}

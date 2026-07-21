@@ -2,21 +2,73 @@
 from datetime import datetime, time
 from odoo import api, fields, models, _
 
+
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
 
     attendance_discrepancy_hours = fields.Float(
         string='Attendance Discrepancy Hours',
-        store=True,
+        compute='_compute_attendance_discrepancy',
+        search='_search_attendance_discrepancy_hours',
+        store=False,
     )
     has_attendance_discrepancy = fields.Boolean(
         string='Has Attendance Discrepancy',
-        store=True,
+        compute='_compute_attendance_discrepancy',
+        search='_search_has_attendance_discrepancy',
+        store=False,
     )
     attendance_discrepancy_string = fields.Char(
         string='Attendance Mismatch String',
         compute='_compute_attendance_discrepancy_string',
     )
+
+    @api.depends('worked_days_line_ids.number_of_hours', 'worked_days_line_ids.code',
+                 'employee_id', 'date_from', 'date_to')
+    def _compute_attendance_discrepancy(self):
+        for payslip in self:
+            if not (payslip.contract_id and payslip.date_from and payslip.date_to):
+                payslip.attendance_discrepancy_hours = 0.0
+                payslip.has_attendance_discrepancy = False
+                continue
+            data = payslip._get_attendance_vs_schedule(
+                payslip.contract_id, payslip.date_from, payslip.date_to
+            )
+            discrepancy = data['overtime_hours_delta'] - data['shortage_hours_delta']
+            payslip.attendance_discrepancy_hours = discrepancy
+            payslip.has_attendance_discrepancy = abs(discrepancy) > 0.01
+
+    def _search_has_attendance_discrepancy(self, operator, value):
+        positive = (operator in ('=', '!=') and bool(value) == (operator == '='))
+        payslips = self.search([('contract_id', '!=', False), ('date_from', '!=', False), ('date_to', '!=', False)])
+        matched_ids = []
+        for payslip in payslips:
+            data = payslip._get_attendance_vs_schedule(payslip.contract_id, payslip.date_from, payslip.date_to)
+            discrepancy = data['overtime_hours_delta'] - data['shortage_hours_delta']
+            has_disc = abs(discrepancy) > 0.01
+            if has_disc if positive else not has_disc:
+                matched_ids.append(payslip.id)
+        return [('id', 'in', matched_ids)]
+
+    def _search_attendance_discrepancy_hours(self, operator, value):
+        payslips = self.search([('contract_id', '!=', False), ('date_from', '!=', False), ('date_to', '!=', False)])
+        matched_ids = []
+        for payslip in payslips:
+            data = payslip._get_attendance_vs_schedule(payslip.contract_id, payslip.date_from, payslip.date_to)
+            discrepancy = data['overtime_hours_delta'] - data['shortage_hours_delta']
+            if operator == '=' and abs(discrepancy - value) < 0.01:
+                matched_ids.append(payslip.id)
+            elif operator == '!=' and abs(discrepancy - value) >= 0.01:
+                matched_ids.append(payslip.id)
+            elif operator == '>' and discrepancy > value:
+                matched_ids.append(payslip.id)
+            elif operator == '>=' and discrepancy >= value:
+                matched_ids.append(payslip.id)
+            elif operator == '<' and discrepancy < value:
+                matched_ids.append(payslip.id)
+            elif operator == '<=' and discrepancy <= value:
+                matched_ids.append(payslip.id)
+        return [('id', 'in', matched_ids)]
 
     @api.depends('attendance_discrepancy_hours')
     def _compute_attendance_discrepancy_string(self):
@@ -93,26 +145,12 @@ class HrPayslip(models.Model):
                     'number_of_hours': data['shortage_hours_delta'],
                     'contract_id': contract.id,
                 })
-            
-            if self:
-                for payslip in self:
-                    discrepancy = data['overtime_hours_delta'] - data['shortage_hours_delta']
-                    payslip.attendance_discrepancy_hours = discrepancy
-                    payslip.has_attendance_discrepancy = abs(discrepancy) > 0.01
         return res
 
     def action_compute_sheet(self):
-        res = super(HrPayslip, self).action_compute_sheet()
-        for payslip in self:
-            contract = payslip.contract_id
-            if contract and payslip.date_from and payslip.date_to:
-                data = payslip._get_attendance_vs_schedule(contract, payslip.date_from, payslip.date_to)
-                discrepancy = data['overtime_hours_delta'] - data['shortage_hours_delta']
-                payslip.write({
-                    'attendance_discrepancy_hours': discrepancy,
-                    'has_attendance_discrepancy': abs(discrepancy) > 0.01,
-                })
-        return res
+        if hasattr(self.env, '_attendance_cache'):
+            self.env._attendance_cache.clear()
+        return super(HrPayslip, self).action_compute_sheet()
 
     def action_view_attendance_discrepancy(self):
         self.ensure_one()

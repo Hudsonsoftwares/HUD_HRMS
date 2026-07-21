@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Client Action Declaration -->
+    <record id="action_dynamic_financial_report" model="ir.actions.client">
+        <field name="name">Financial Report</field>
+        <field name="tag">hudson_dynamic_financial_report</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- Inherit Profit and Loss / Balance Sheet Wizard View -->
+    <record id="financial_report_view_form_inherit_dynamic" model="ir.ui.view">
+        <field name="name">financial.report.view.form.inherit.dynamic</field>
+        <field name="model">financial.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.financial_report_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='view_report_pdf']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Cash Flow Statement Wizard View -->
+    <record id="cash_flow_report_view_inherit_dynamic" model="ir.ui.view">
+        <field name="name">cash.flow.report.view.form.inherit.dynamic</field>
+        <field name="model">cash.flow.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.cash_flow_report_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Day Book Wizard View -->
+    <record id="account_day_book_report_view_form_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.day.book.report.view.form.inherit.dynamic</field>
+        <field name="model">account.day.book.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_day_book_report_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Cash Book Wizard View -->
+    <record id="account_cash_book_report_view_form_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.cash.book.report.view.form.inherit.dynamic</field>
+        <field name="model">account.cash.book.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_cash_book_report_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Bank Book Wizard View -->
+    <record id="account_bank_book_report_view_form_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.bank.book.report.view.form.inherit.dynamic</field>
+        <field name="model">account.bank.book.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_bank_book_report_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Partner Ledger Wizard View -->
+    <record id="account_report_partner_ledger_view_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.report.partner.ledger.view.inherit.dynamic</field>
+        <field name="model">account.report.partner.ledger</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_report_partner_ledger_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit General Ledger Wizard View -->
+    <record id="account_report_general_ledger_view_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.report.general.ledger.view.inherit.dynamic</field>
+        <field name="model">account.report.general.ledger</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_report_general_ledger_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Trial Balance Wizard View -->
+    <record id="account_report_balance_view_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.report.balance.view.inherit.dynamic</field>
+        <field name="model">account.balance.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_report_balance_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Aged Trial Balance Wizard View -->
+    <record id="account_aged_trial_balance_view_form_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.aged.trial.balance.view.form.inherit.dynamic</field>
+        <field name="model">account.aged.trial.balance</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_aged_trial_balance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Journals Audit Wizard View -->
+    <record id="account_common_report_inherited_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.common.report.inherited.inherit.dynamic</field>
+        <field name="model">account.print.journal</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_common_report_inherited"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='check_report']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit Currency Revaluation Wizard View -->
+    <record id="account_fx_revaluation_view_form_inherit_dynamic" model="ir.ui.view">
+        <field name="name">account.fx.revaluation.view.form.inherit.dynamic</field>
+        <field name="model">account.fx.revaluation</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_fx_revaluation_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_revaluate']" position="before">
+                <button name="action_view_online" string="View Online" type="object" class="btn-primary" data-hotkey="v"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
