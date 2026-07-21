@@ -15,6 +15,7 @@
         'security/ir.model.access.csv',
         'data/hr_employee_type_data.xml',
         'reports/payment_advice_report.xml',
+        'data/mail_template_data.xml',
         'views/hr_employee_type_views.xml',
         'views/payrun_wizard_views.xml',
         'views/payment_advice_views.xml',

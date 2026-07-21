@@ -23,6 +23,8 @@
                             class="oe_highlight" icon="fa-download"/>
                     <button name="%(hudson_payroll_payrun.action_report_payment_advice)d" type="action" string="Print PDF Advice"
                             icon="fa-print"/>
+                    <button name="action_send_email" type="object" string="Send Email"
+                            invisible="state != 'confirmed'" class="oe_highlight" icon="fa-envelope"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
                 </header>
                 <sheet>

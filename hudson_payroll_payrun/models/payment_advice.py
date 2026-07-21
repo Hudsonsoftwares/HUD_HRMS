@@ -78,6 +78,62 @@ class HudsonPayrollPaymentAdvice(models.Model):
             advice.write({'state': 'confirmed'})
         return True
 
+    def action_send_email(self):
+        """Open mail composer with company bank email pre-populated and PDF advice attached."""
+        self.ensure_one()
+        if self.state != 'confirmed':
+            raise UserError(_("Please confirm the Payment Advice before sending by email."))
+
+        # 1. Fetch Company Bank Email details
+        bank = self.company_bank_id
+        email_to = ''
+        if bank:
+            if bank.partner_id and bank.partner_id.email:
+                email_to = bank.partner_id.email
+            elif bank.bank_id and hasattr(bank.bank_id, 'email') and bank.bank_id.email:
+                email_to = bank.bank_id.email
+            elif hasattr(bank, 'email') and bank.email:
+                email_to = bank.email
+
+        # 2. Get mail template
+        template = self.env.ref('hudson_payroll_payrun.mail_template_payment_advice', False)
+
+        ctx = {
+            'default_model': 'hudson.payroll.payment.advice',
+            'default_res_ids': [self.id],
+            'default_use_template': bool(template),
+            'default_template_id': template.id if template else False,
+            'default_composition_mode': 'comment',
+            'default_email_to': email_to,
+            'mark_so_as_sent': True,
+            'force_email': True,
+        }
+
+        # 3. Generate and attach printable QWeb PDF Payment Advice
+        report = self.env.ref('hudson_payroll_payrun.action_report_payment_advice', False)
+        if report:
+            pdf_content, _ = report._render_qweb_pdf(report.id, [self.id])
+            attachment_name = f"Payment_Advice_{self.name.replace('/', '_')}.pdf"
+            attachment = self.env['ir.attachment'].create({
+                'name': attachment_name,
+                'datas': base64.b64encode(pdf_content),
+                'res_model': 'hudson.payroll.payment.advice',
+                'res_id': self.id,
+                'type': 'binary',
+                'mimetype': 'application/pdf',
+            })
+            ctx['default_attachment_ids'] = [(6, 0, [attachment.id])]
+
+        return {
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'mail.compose.message',
+            'views': [(False, 'form')],
+            'view_id': False,
+            'target': 'new',
+            'context': ctx,
+        }
+
     def action_export_csv(self):
         """Generate a CSV bank transfer file for download."""
         self.ensure_one()
