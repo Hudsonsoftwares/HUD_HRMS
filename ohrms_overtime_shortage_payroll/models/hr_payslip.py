@@ -150,7 +150,14 @@ class HrPayslip(models.Model):
     def action_compute_sheet(self):
         if hasattr(self.env, '_attendance_cache'):
             self.env._attendance_cache.clear()
+        for payslip in self:
+            if not payslip.worked_days_line_ids and payslip.contract_id:
+                contracts = payslip.contract_id
+                wd_lines = payslip.get_worked_day_lines(contracts, payslip.date_from, payslip.date_to)
+                if wd_lines:
+                    payslip.write({'worked_days_line_ids': [(0, 0, line) for line in wd_lines]})
         return super(HrPayslip, self).action_compute_sheet()
+
 
     def action_view_attendance_discrepancy(self):
         self.ensure_one()
