@@ -1,3 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Extend Employee Form View with Statutory Information under Personal Information -->
+    <record id="hds_in_view_employee_form" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.hudson.payroll</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='personal_information']" position="inside">
+                <group string="STATUTORY INFORMATION" name="hds_in_statutory_info">
+                    <group>
+                        <field name="hds_in_epf_applicable"/>
+                        <field name="hds_in_uan"/>
+                        <field name="hds_in_pf_member_id"/>
+                        <field name="hds_in_pf_joining_date"/>
+                        <field name="hds_in_existing_epf_member"/>
+                    </group>
+                    <group>
+                        <field name="hds_in_eps_applicable"/>
+                        <field name="hds_in_existing_eps_member"/>
+                        <field name="hds_in_pf_contribution_basis"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
 </odoo>
