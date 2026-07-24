@@ -42,9 +42,19 @@ class HrAttendance(models.Model):
                         'description': f"Employee worked {duration:.2f} hours, which exceeds the threshold of 12 hours."
                     })
 
-            # 2. Late Arrival & Early Departure
             if att.check_in and att.employee_id.resource_calendar_id:
                 calendar = att.employee_id.resource_calendar_id
+                tz = pytz.timezone(calendar.tz or 'UTC')
+                local_check_in = pytz.utc.localize(att.check_in).astimezone(tz)
+                day = local_check_in.date()
+                
+                # Skip shift anomalies on Official Public Holidays (global leaves)
+                is_public_holiday = bool(calendar.global_leave_ids.filtered(
+                    lambda l: l.date_from.date() <= day <= l.date_to.date()
+                ))
+                if is_public_holiday:
+                    continue
+                
                 weekday = str(att.check_in.weekday())
                 shifts = calendar.attendance_ids.filtered(lambda a: a.dayofweek == weekday)
                 if shifts:

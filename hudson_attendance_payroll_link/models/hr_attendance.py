@@ -43,7 +43,12 @@ class HrAttendance(models.Model):
                 # Get scheduled hours for this day
                 day_start = tz.localize(datetime.combine(day, time.min))
                 day_end = tz.localize(datetime.combine(day, time.max))
-                scheduled_hours = calendar.get_work_hours_count(day_start, day_end, compute_leaves=False)
+                
+                # Respect public holidays (leaves) when checking for shortfall
+                is_public_holiday = bool(calendar.global_leave_ids.filtered(
+                    lambda l: l.date_from.date() <= day <= l.date_to.date()
+                ))
+                scheduled_hours = 0.0 if is_public_holiday else calendar.get_work_hours_count(day_start, day_end, compute_leaves=False)
                 
                 if scheduled_hours > 0.0:
                     worked = att.worked_hours
