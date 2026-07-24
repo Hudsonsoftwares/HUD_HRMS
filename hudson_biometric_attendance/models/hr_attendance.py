@@ -29,6 +29,8 @@ class HrAttendance(models.Model):
         return res
 
     def _check_anomalies(self):
+        if hasattr(super(HrAttendance, self), '_check_anomalies'):
+            super(HrAttendance, self)._check_anomalies()
         for att in self:
             # 1. Unusual Working Hours (> 12 hours)
             if att.check_in and att.check_out:

@@ -30,7 +30,8 @@ class HrAttendance(models.Model):
         return res
 
     def _check_anomalies(self):
-        super(HrAttendance, self)._check_anomalies()
+        if hasattr(super(HrAttendance, self), '_check_anomalies'):
+            super(HrAttendance, self)._check_anomalies()
         for att in self:
             if att.check_in and att.check_out and att.employee_id.resource_calendar_id:
                 calendar = att.employee_id.resource_calendar_id
@@ -76,6 +77,34 @@ class HrAttendance(models.Model):
                                 'reason': 'Auto-generated for Hours Shortfall.',
                                 'state': 'draft'
                             })
+
+            # Missing Punch / Missing Check-out Anomaly & Regularization Check
+            if att.check_in and not att.check_out:
+                existing = self.env['hudson.attendance.anomaly'].search([
+                    ('attendance_id', '=', att.id),
+                    ('anomaly_type', '=', 'missing_punch')
+                ])
+                if not existing:
+                    calendar = att.employee_id.resource_calendar_id
+                    tz = pytz.timezone(calendar.tz or 'UTC') if calendar else pytz.UTC
+                    local_check_in = pytz.utc.localize(att.check_in).astimezone(tz)
+                    
+                    anomaly = self.env['hudson.attendance.anomaly'].create({
+                        'name': 'Missing Punch',
+                        'anomaly_type': 'missing_punch',
+                        'employee_id': att.employee_id.id,
+                        'attendance_id': att.id,
+                        'description': f"Employee checked in at {local_check_in.strftime('%Y-%m-%d %H:%M:%S')} but has no check-out."
+                    })
+                    self.env['hudson.attendance.regularization'].create({
+                        'employee_id': att.employee_id.id,
+                        'anomaly_id': anomaly.id,
+                        'attendance_id': att.id,
+                        'orig_check_in': att.check_in,
+                        'orig_check_out': False,
+                        'reason': 'Auto-generated for Missing Punch.',
+                        'state': 'draft'
+                    })
 
     @api.model
     def _cron_check_attendance_anomalies(self):
