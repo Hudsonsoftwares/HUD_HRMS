@@ -16,6 +16,7 @@
         'views/res_config_settings_views.xml',
         'views/hr_rule_parameter_views.xml',
         'views/hr_employee_views.xml',
+        'views/hr_salary_rule_views.xml',
         'views/hr_contract_views.xml',
         'views/hr_payslip_views.xml',
     ],

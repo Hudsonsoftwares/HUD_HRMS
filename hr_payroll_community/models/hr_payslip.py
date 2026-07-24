@@ -115,6 +115,29 @@ class HrPayslip(models.Model):
                                    string="Payslip Computation Details",
                                    help="Set Payslip Count")
 
+    # Currency field for Monetary fields
+    currency_id = fields.Many2one('res.currency', string='Currency', related='company_id.currency_id', readonly=True)
+
+    # Related Contract Breakdown Fields
+    contract_wage = fields.Monetary(related='contract_id.wage', string='Contract Total Salary', currency_field='currency_id', readonly=True)
+    contract_basic_salary = fields.Monetary(related='contract_id.basic_salary', string='Contract Basic Salary', currency_field='currency_id', readonly=True)
+    contract_hra = fields.Monetary(related='contract_id.hra', string='Contract HRA', currency_field='currency_id', readonly=True)
+    contract_da = fields.Monetary(related='contract_id.da', string='Contract DA', currency_field='currency_id', readonly=True)
+    contract_travel_allowance = fields.Monetary(related='contract_id.travel_allowance', string='Contract Travel Allowance', currency_field='currency_id', readonly=True)
+    contract_meal_allowance = fields.Monetary(related='contract_id.meal_allowance', string='Contract Meal Allowance', currency_field='currency_id', readonly=True)
+    contract_medical_allowance = fields.Monetary(related='contract_id.medical_allowance', string='Contract Medical Allowance', currency_field='currency_id', readonly=True)
+    contract_other_allowance = fields.Monetary(related='contract_id.other_allowance', string='Contract Other Allowance', currency_field='currency_id', readonly=True)
+    contract_fixed_allowance = fields.Monetary(related='contract_id.fixed_allowance', string='Contract Fixed Allowance', currency_field='currency_id', readonly=True)
+
+    contract_basic_salary_percent = fields.Float(related='contract_id.basic_salary_percent', string='Contract Basic %', readonly=True)
+    contract_hra_percent = fields.Float(related='contract_id.hra_percent', string='Contract HRA %', readonly=True)
+    contract_da_percent = fields.Float(related='contract_id.da_percent', string='Contract DA %', readonly=True)
+    contract_travel_allowance_percent = fields.Float(related='contract_id.travel_allowance_percent', string='Contract Travel %', readonly=True)
+    contract_meal_allowance_percent = fields.Float(related='contract_id.meal_allowance_percent', string='Contract Meal %', readonly=True)
+    contract_medical_allowance_percent = fields.Float(related='contract_id.medical_allowance_percent', string='Contract Medical %', readonly=True)
+    contract_other_allowance_percent = fields.Float(related='contract_id.other_allowance_percent', string='Contract Other %', readonly=True)
+    contract_fixed_allowance_percent = fields.Float(related='contract_id.fixed_allowance_percent', string='Contract Fixed %', readonly=True)
+
     def _compute_details_by_salary_rule_category_ids(self):
         """Compute function for Salary Rule Category for getting
          all Categories"""

@@ -121,15 +121,26 @@ class HrPayslip(models.Model):
             total_shortage_hours += shortage_hours
             current_date += relativedelta(days=1)
 
-        # 6. Overtime calculation
+        # 6. Overtime calculation (Calculate net extra hours beyond shift, e.g. 1 hr)
         approved_attendances = attendances.filtered(lambda a: a.overtime_status == 'approved')
-        validated_overtime_hours = sum(approved_attendances.mapped('validated_overtime_hours'))
-        
+        net_overtime_hours = 0.0
+        for att in approved_attendances:
+            ot_hrs = getattr(att, 'overtime_hours', 0.0) or 0.0
+            val_hrs = getattr(att, 'validated_overtime_hours', 0.0) or 0.0
+            if ot_hrs > 0.0 and val_hrs > 0.0:
+                # Use net overtime hours, capped if user manually set a lower validated amount
+                effective_ot = min(ot_hrs, val_hrs)
+            elif ot_hrs > 0.0:
+                effective_ot = ot_hrs
+            else:
+                effective_ot = val_hrs
+            net_overtime_hours += effective_ot
+
         data = {
             'scheduled_hours': total_scheduled_hours,
             'actual_hours': total_actual_hours,
-            'validated_overtime_hours': validated_overtime_hours,
-            'overtime_hours_delta': validated_overtime_hours,
+            'validated_overtime_hours': net_overtime_hours,
+            'overtime_hours_delta': net_overtime_hours,
             'shortage_hours_delta': total_shortage_hours,
             'unpaid_hours': total_unpaid_hours,
             'unpaid_days': total_unpaid_days,
@@ -137,6 +148,70 @@ class HrPayslip(models.Model):
         
         self.env._attendance_cache[cache_key] = data
         return data
+
+    def _get_period_shortage_rate(self, contract, date_from, date_to):
+        """Calculates period-exact hourly rate for Fixed Salary mode based on real scheduled hours."""
+        data = self._get_attendance_vs_schedule(contract, date_from, date_to)
+        sched_hrs = data.get('scheduled_hours', 0.0)
+        if contract.salary_calculation_type == 'fixed':
+            return (contract.wage / sched_hrs) if sched_hrs > 0.0 else 0.0
+        return contract.shortage_deduction_rate_per_hour
+
+    attendance_discrepancy_hours = fields.Float(
+        string='Attendance Discrepancy Hours',
+        compute='_compute_attendance_discrepancy',
+        store=True,
+    )
+    has_attendance_discrepancy = fields.Boolean(
+        string='Has Attendance Discrepancy',
+        compute='_compute_attendance_discrepancy',
+        store=True,
+    )
+    attendance_discrepancy_string = fields.Char(
+        string='Attendance Mismatch String',
+        compute='_compute_attendance_discrepancy_string',
+    )
+
+    @api.depends('worked_days_line_ids', 'employee_id', 'date_from', 'date_to')
+    def _compute_attendance_discrepancy(self):
+        for payslip in self:
+            if payslip.contract_id and payslip.date_from and payslip.date_to:
+                data = payslip._get_attendance_vs_schedule(payslip.contract_id, payslip.date_from, payslip.date_to)
+                ot = data.get('overtime_hours_delta', 0.0)
+                st = data.get('shortage_hours_delta', 0.0)
+                payslip.attendance_discrepancy_hours = ot - st
+            else:
+                payslip.attendance_discrepancy_hours = 0.0
+            payslip.has_attendance_discrepancy = abs(payslip.attendance_discrepancy_hours) > 0.01
+
+    @api.depends('attendance_discrepancy_hours')
+    def _compute_attendance_discrepancy_string(self):
+        for payslip in self:
+            val = payslip.attendance_discrepancy_hours
+            sign = "+" if val >= 0 else ""
+            payslip.attendance_discrepancy_string = f"{sign}{val:.1f} hrs"
+
+    def action_view_attendance_discrepancy(self):
+        self.ensure_one()
+        domain = [
+            ('employee_id', '=', self.employee_id.id),
+            ('check_in', '>=', datetime.combine(fields.Date.from_string(self.date_from), time.min)),
+            ('check_in', '<=', datetime.combine(fields.Date.from_string(self.date_to), time.max)),
+        ]
+        return {
+            'name': _('Attendances'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'hr.attendance',
+            'view_mode': 'list,form',
+            'domain': domain,
+        }
+
+    def action_compute_sheet(self):
+        for payslip in self:
+            payslip.worked_days_line_ids.unlink()
+            lines = [(0, 0, line) for line in self.get_worked_day_lines(payslip.contract_id, payslip.date_from, payslip.date_to)]
+            payslip.write({'worked_days_line_ids': lines})
+        return super(HrPayslip, self).action_compute_sheet()
 
     @api.model
     def get_worked_day_lines(self, contracts, date_from, date_to):
@@ -152,4 +227,24 @@ class HrPayslip(models.Model):
                     'number_of_hours': data['unpaid_hours'],
                     'contract_id': contract.id,
                 })
+            if data.get('shortage_hours_delta', 0.0) > 0.01:
+                if not any(l.get('code') == 'SHORTAGE' for l in res):
+                    res.append({
+                        'name': _('Attendance Shortage'),
+                        'sequence': 5,
+                        'code': 'SHORTAGE',
+                        'number_of_days': 0.0,
+                        'number_of_hours': data['shortage_hours_delta'],
+                        'contract_id': contract.id,
+                    })
+            if data.get('overtime_hours_delta', 0.0) > 0.01:
+                if not any(l.get('code') == 'OVERTIME' for l in res):
+                    res.append({
+                        'name': _('Overtime Hours'),
+                        'sequence': 5,
+                        'code': 'OVERTIME',
+                        'number_of_days': 0.0,
+                        'number_of_hours': data['overtime_hours_delta'],
+                        'contract_id': contract.id,
+                    })
         return res

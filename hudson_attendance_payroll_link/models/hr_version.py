@@ -6,14 +6,22 @@ class HrVersion(models.Model):
 
     standard_working_days_per_month = fields.Float(
         string='Standard Working Days per Month',
-        default=26.0,
-        help="Number of working days in a month for hourly rate calculation."
+        compute='_compute_calendar_standards',
+        store=True,
+        readonly=True,
+        help="Stable annual average monthly working days derived from Working Schedule: (working_days_per_week * 52 / 12)."
     )
     standard_hours_per_day = fields.Float(
         string='Standard Hours per Day',
-        default=8.0,
-        help="Number of hours in a standard working day."
+        compute='_compute_calendar_standards',
+        store=True,
+        readonly=True,
+        help="Standard hours per working day derived from Working Schedule."
     )
+    salary_calculation_type = fields.Selection([
+        ('fixed', 'Fixed Salary (Pro-rated by Attendance)'),
+        ('hourly', 'Hourly Rate (Pure Attendance-Based)'),
+    ], string='Salary Calculation Type', default='fixed', required=True)
     overtime_multiplier = fields.Float(
         string='Overtime Multiplier',
         default=1.0,
@@ -145,7 +153,32 @@ class HrVersion(models.Model):
             super(HrVersion, rec).write(local_vals)
         return True
 
-    @api.depends('wage', 'standard_working_days_per_month', 'standard_hours_per_day')
+    @api.depends('resource_calendar_id', 'resource_calendar_id.hours_per_day', 'resource_calendar_id.attendance_ids')
+    def _compute_calendar_standards(self):
+        for rec in self:
+            cal = rec.resource_calendar_id
+            if cal:
+                if cal.hours_per_day:
+                    rec.standard_hours_per_day = float(cal.hours_per_day)
+                elif cal.attendance_ids:
+                    days_dict = {}
+                    for att in cal.attendance_ids:
+                        span = att.hour_to - att.hour_from
+                        days_dict[att.dayofweek] = days_dict.get(att.dayofweek, 0.0) + span
+                    rec.standard_hours_per_day = (sum(days_dict.values()) / len(days_dict)) if days_dict else 8.0
+                else:
+                    rec.standard_hours_per_day = 8.0
+
+                if cal.attendance_ids:
+                    working_days_per_week = len(set(cal.attendance_ids.mapped('dayofweek')))
+                    rec.standard_working_days_per_month = (working_days_per_week * 52.0) / 12.0
+                else:
+                    rec.standard_working_days_per_month = 26.0
+            else:
+                rec.standard_hours_per_day = 8.0
+                rec.standard_working_days_per_month = 26.0
+
+    @api.depends('wage', 'standard_working_days_per_month', 'standard_hours_per_day', 'resource_calendar_id')
     def _compute_hourly_rate(self):
         for rec in self:
             divisor = rec.standard_working_days_per_month * rec.standard_hours_per_day
@@ -197,6 +230,35 @@ class HrVersion(models.Model):
             if not rec.shortage_rate_manually_set:
                 rec.shortage_deduction_rate_per_hour = computed_hourly
 
+    def _get_period_scheduled_hours(self, date_from, date_to):
+        """Private helper: Returns total scheduled working hours for the period from resource.calendar."""
+        self.ensure_one()
+        data = self.env['hr.payslip']._get_attendance_vs_schedule(self, date_from, date_to)
+        return data.get('scheduled_hours', 0.0)
+
+    def get_period_shortage_rate(self, date_from, date_to):
+        """Public method: Returns hourly shortage rate for the payslip period."""
+        self.ensure_one()
+        if not self.pay_by_attendance:
+            return 0.0
+        if not self.salary_calculation_type or self.salary_calculation_type == 'fixed':
+            sched_hrs = self._get_period_scheduled_hours(date_from, date_to)
+            return (self.wage / sched_hrs) if sched_hrs > 0.0 else 0.0
+        return self.shortage_deduction_rate_per_hour or 0.0
+
+    def get_period_overtime_rate(self, date_from, date_to):
+        """Public method: Returns hourly overtime rate for the payslip period."""
+        self.ensure_one()
+        if not self.pay_by_attendance:
+            return 0.0
+        if self.overtime_rate_manually_set:
+            return self.overtime_rate_per_hour or 0.0
+        if not self.salary_calculation_type or self.salary_calculation_type == 'fixed':
+            sched_hrs = self._get_period_scheduled_hours(date_from, date_to)
+            base_hourly = (self.wage / sched_hrs) if sched_hrs > 0.0 else 0.0
+            return base_hourly * (self.overtime_multiplier or 1.0)
+        return self.overtime_rate_per_hour or self.overtime_hourly_rate or 0.0
+
     def action_reset_to_computed_rates(self):
         for rec in self:
             divisor = rec.standard_working_days_per_month * rec.standard_hours_per_day
@@ -207,3 +269,13 @@ class HrVersion(models.Model):
                 'overtime_rate_per_hour': computed_hourly * rec.overtime_multiplier,
                 'shortage_deduction_rate_per_hour': computed_hourly,
             })
+
+    @api.model
+    def _get_whitelist_fields_from_template(self):
+        res = super(HrVersion, self)._get_whitelist_fields_from_template() if hasattr(super(HrVersion, self), '_get_whitelist_fields_from_template') else []
+        res.extend([
+            'basic_salary', 'hra', 'da', 'travel_allowance', 'meal_allowance',
+            'medical_allowance', 'other_allowance', 'fixed_allowance',
+            'pay_by_attendance', 'salary_calculation_type',
+        ])
+        return list(set(res))

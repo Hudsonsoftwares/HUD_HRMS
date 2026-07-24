@@ -7,6 +7,8 @@
         <field name="arch" type="xml">
             <xpath expr="//group[@name='allowances']" position="after">
                 <group string="Hourly Rate Configuration" name="hourly_rate_config">
+                    <field name="salary_calculation_type"/>
+                    <field name="pay_by_attendance"/>
                     <field name="standard_working_days_per_month"/>
                     <field name="standard_hours_per_day"/>
                     <field name="overtime_multiplier"/>

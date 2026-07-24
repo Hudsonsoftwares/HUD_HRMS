@@ -25,43 +25,71 @@
                    position="after">
                 <field name="schedule_pay"/>
             </xpath>
+            <xpath expr="//field[@name='wage']" position="attributes">
+                <attribute name="string">Total Salary</attribute>
+            </xpath>
+            <xpath expr="//div[@name='wage']" position="after">
+                <field name="pay_by_attendance" widget="boolean_toggle"/>
+            </xpath>
             <xpath expr="//group[@name='contract']" position="after">
-                <group string="Monthly Advantages in Cash" name='allowances'>
+                <group string="Salary Breakdown" name='allowances'>
+                    <label for="basic_salary"/>
+                    <div class="o_row">
+                        <field name="basic_salary" nolabel="1"/>
+                        <span>/ month</span>
+                        <span class="ms-2 text-muted">(<field name="basic_salary_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                    </div>
                     <label for="hra"/>
                     <div class="o_row">
                         <field name="hra" nolabel="1"/>
                         <span>/ month</span>
+                        <span class="ms-2 text-muted">(<field name="hra_percent" readonly="1" digits="[16, 2]"/>%)</span>
                     </div>
                     <label for="da"/>
                     <div class="o_row">
                         <field name="da" nolabel="1"/>
                         <span>/ month</span>
+                        <span class="ms-2 text-muted">(<field name="da_percent" readonly="1" digits="[16, 2]"/>%)</span>
                     </div>
                     <label for="travel_allowance"/>
                     <div class="o_row">
-
                         <field name="travel_allowance" nolabel="1"/>
                         <span>/ month</span>
+                        <span class="ms-2 text-muted">(<field name="travel_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
                     </div>
                     <label for="meal_allowance"/>
                     <div class="o_row">
-
                         <field name="meal_allowance" nolabel="1"/>
                         <span>/ month</span>
+                        <span class="ms-2 text-muted">(<field name="meal_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
                     </div>
                     <label for="medical_allowance"/>
                     <div class="o_row">
-
                         <field name="medical_allowance" nolabel="1"/>
                         <span>/ month</span>
+                        <span class="ms-2 text-muted">(<field name="medical_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
                     </div>
                     <label for="other_allowance"/>
                     <div class="o_row">
-
                         <field name="other_allowance" nolabel="1"/>
                         <span>/ month</span>
+                        <span class="ms-2 text-muted">(<field name="other_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                    </div>
+                    <label for="fixed_allowance"/>
+                    <div class="o_row">
+                        <field name="fixed_allowance" nolabel="1"/>
+                        <span>/ month</span>
+                        <span class="ms-2 text-muted">(<field name="fixed_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
                     </div>
                 </group>
+                <group string="Breakdown Validation" name="breakdown_validation">
+                    <field name="breakdown_total" readonly="1"/>
+                    <field name="breakdown_diff" readonly="1"/>
+                    <field name="breakdown_is_equal" invisible="1"/>
+                </group>
+                <div class="alert alert-warning mt-2 mb-2" role="alert" invisible="breakdown_is_equal">
+                    <strong>Warning:</strong> Sum of Salary Breakdown (<field name="breakdown_total"/>) does not match Total Salary (<field name="wage"/>). Difference: <field name="breakdown_diff"/>.
+                </div>
             </xpath>
         </field>
     </record>

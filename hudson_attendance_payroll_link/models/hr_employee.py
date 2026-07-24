@@ -4,6 +4,12 @@ from odoo import api, fields, models
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
 
+    salary_calculation_type = fields.Selection(
+        related='current_version_id.salary_calculation_type',
+        readonly=False,
+        string='Salary Calculation Type',
+    )
+
     @api.model
     def get_user_employee_details(self):
         res = super(HrEmployee, self).get_user_employee_details()

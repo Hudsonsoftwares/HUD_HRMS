@@ -1,3 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Initial Statutory PF Wage Basis Configuration for Standard Salary Rules -->
+    <data noupdate="1">
+        <!-- Basic Salary (BASIC) -> Include in PF Wage = True -->
+        <record id="hr_payroll_community.hr_rule_basic" model="hr.salary.rule">
+            <field name="hds_in_include_in_pf_wage">True</field>
+        </record>
+
+        <!-- Dearness Allowance (DA) -> Include in PF Wage = True -->
+        <record id="hr_payroll_community.hr_rule_da" model="hr.salary.rule">
+            <field name="hds_in_include_in_pf_wage">True</field>
+        </record>
+
+        <!-- House Rent Allowance (HRA) -> Include in PF Wage = False -->
+        <record id="hr_payroll_community.hr_rule_hra" model="hr.salary.rule">
+            <field name="hds_in_include_in_pf_wage">False</field>
+        </record>
+
+        <!-- Travel Allowance (Travel) -> Include in PF Wage = False -->
+        <record id="hr_payroll_community.hr_rule_travel" model="hr.salary.rule">
+            <field name="hds_in_include_in_pf_wage">False</field>
+        </record>
+
+        <!-- Meal Allowance (Meal) -> Include in PF Wage = False -->
+        <record id="hr_payroll_community.hr_rule_meal" model="hr.salary.rule">
+            <field name="hds_in_include_in_pf_wage">False</field>
+        </record>
+
+        <!-- Medical Allowance (Medical) -> Include in PF Wage = False -->
+        <record id="hr_payroll_community.hr_rule_medical" model="hr.salary.rule">
+            <field name="hds_in_include_in_pf_wage">False</field>
+        </record>
+
+        <!-- Other Allowance (Other) -> Include in PF Wage = False -->
+        <record id="hr_payroll_community.hr_rule_other" model="hr.salary.rule">
+            <field name="hds_in_include_in_pf_wage">False</field>
+        </record>
+
+        <!-- Unpaid Leave Deduction (UNPAID) -> Include in PF Wage = False -->
+        <record id="hr_payroll_community.hr_rule_unpaid" model="hr.salary.rule">
+            <field name="hds_in_include_in_pf_wage">False</field>
+        </record>
+    </data>
 </odoo>

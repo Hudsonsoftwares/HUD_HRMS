@@ -107,15 +107,25 @@ class HrPayslip(models.Model):
         actual_hours = sum(attendances.mapped('worked_hours'))
         
         approved_attendances = attendances.filtered(lambda a: a.overtime_status == 'approved')
-        validated_overtime_hours = sum(approved_attendances.mapped('validated_overtime_hours'))
+        net_overtime_hours = 0.0
+        for att in approved_attendances:
+            ot_hrs = getattr(att, 'overtime_hours', 0.0) or 0.0
+            val_hrs = getattr(att, 'validated_overtime_hours', 0.0) or 0.0
+            if ot_hrs > 0.0 and val_hrs > 0.0:
+                effective_ot = min(ot_hrs, val_hrs)
+            elif ot_hrs > 0.0:
+                effective_ot = ot_hrs
+            else:
+                effective_ot = val_hrs
+            net_overtime_hours += effective_ot
         
-        overtime_hours_delta = validated_overtime_hours
+        overtime_hours_delta = net_overtime_hours
         shortage_hours_delta = max(scheduled_hours - actual_hours, 0.0)
         
         data = {
             'scheduled_hours': scheduled_hours,
             'actual_hours': actual_hours,
-            'validated_overtime_hours': validated_overtime_hours,
+            'validated_overtime_hours': net_overtime_hours,
             'overtime_hours_delta': overtime_hours_delta,
             'shortage_hours_delta': shortage_hours_delta,
         }

@@ -6,6 +6,29 @@ from odoo import api, fields, models, _
 class HrAttendance(models.Model):
     _inherit = 'hr.attendance'
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super(HrAttendance, self).create(vals_list)
+        for rec in records:
+            ot = getattr(rec, 'overtime_hours', 0.0) or 0.0
+            val = getattr(rec, 'validated_overtime_hours', 0.0) or 0.0
+            if ot == 0.0 and val > 0.0:
+                rec.sudo().write({'validated_overtime_hours': 0.0})
+            elif ot > 0.0 and val > ot:
+                rec.sudo().write({'validated_overtime_hours': ot})
+        return records
+
+    def write(self, vals):
+        res = super(HrAttendance, self).write(vals)
+        for rec in self:
+            ot = getattr(rec, 'overtime_hours', 0.0) or 0.0
+            val = getattr(rec, 'validated_overtime_hours', 0.0) or 0.0
+            if ot == 0.0 and val > 0.0:
+                super(HrAttendance, rec).write({'validated_overtime_hours': 0.0})
+            elif ot > 0.0 and val > ot:
+                super(HrAttendance, rec).write({'validated_overtime_hours': ot})
+        return res
+
     def _check_anomalies(self):
         super(HrAttendance, self)._check_anomalies()
         for att in self:

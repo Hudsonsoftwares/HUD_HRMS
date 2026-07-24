@@ -10,8 +10,8 @@
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
             <field name="amount_python_compute">
-result = contract.overtime_rate_per_hour
-result_qty = worked_days.OVERTIME.number_of_hours if worked_days.OVERTIME else 0.0
+result = contract.overtime_rate_per_hour if contract.pay_by_attendance else 0.0
+result_qty = worked_days.OVERTIME.number_of_hours if (worked_days.OVERTIME and contract.pay_by_attendance) else 0.0
             </field>
             <field name="appears_on_payslip" eval="True"/>
         </record>
@@ -25,8 +25,8 @@ result_qty = worked_days.OVERTIME.number_of_hours if worked_days.OVERTIME else 0
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
             <field name="amount_python_compute">
-result = -contract.shortage_deduction_rate_per_hour
-result_qty = worked_days.SHORTAGE.number_of_hours if worked_days.SHORTAGE else 0.0
+result = -contract.shortage_deduction_rate_per_hour if contract.pay_by_attendance else 0.0
+result_qty = worked_days.SHORTAGE.number_of_hours if (worked_days.SHORTAGE and contract.pay_by_attendance) else 0.0
             </field>
             <field name="appears_on_payslip" eval="True"/>
         </record>

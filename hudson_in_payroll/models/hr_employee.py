@@ -37,6 +37,6 @@ class HrEmployee(models.Model):
     )
     hds_in_pf_contribution_basis = fields.Selection([
         ('statutory_ceiling', 'Statutory Wage Ceiling'),
-        ('actual_basic', 'Actual Basic / Gross Wage'),
+        ('actual_basic', 'Actual PF Wage'),
     ], string="PF Contribution Basis", default='statutory_ceiling', required=True,
-       help="Basis for calculating PF contribution (capped at statutory ceiling vs actual basic).")
+       help="Basis for calculating PF contribution (capped at statutory wage ceiling vs actual PF wage).")

@@ -141,6 +141,67 @@
                         <field name="credit_note" readonly="state != 'draft'"/>
                     </group>
                     <notebook>
+                        <page string="Contract Salary Breakdown" name="contract_salary_breakdown" invisible="not contract_id">
+                            <group>
+                                <group string="Contract Summary">
+                                    <label for="contract_wage" string="Total Salary"/>
+                                    <div class="o_row">
+                                        <field name="contract_wage" readonly="1"/>
+                                        <span>/ month</span>
+                                    </div>
+                                </group>
+                                <group string="Contract Breakdown Components">
+                                    <label for="contract_basic_salary" string="Basic Salary"/>
+                                    <div class="o_row">
+                                        <field name="contract_basic_salary" readonly="1"/>
+                                        <span>/ month</span>
+                                        <span class="ms-2 text-muted">(<field name="contract_basic_salary_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                                    </div>
+                                    <label for="contract_hra" string="House Rent Allowance (HRA)"/>
+                                    <div class="o_row">
+                                        <field name="contract_hra" readonly="1"/>
+                                        <span>/ month</span>
+                                        <span class="ms-2 text-muted">(<field name="contract_hra_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                                    </div>
+                                    <label for="contract_da" string="Dearness Allowance (DA)"/>
+                                    <div class="o_row">
+                                        <field name="contract_da" readonly="1"/>
+                                        <span>/ month</span>
+                                        <span class="ms-2 text-muted">(<field name="contract_da_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                                    </div>
+                                    <label for="contract_travel_allowance" string="Travel Allowance"/>
+                                    <div class="o_row">
+                                        <field name="contract_travel_allowance" readonly="1"/>
+                                        <span>/ month</span>
+                                        <span class="ms-2 text-muted">(<field name="contract_travel_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                                    </div>
+                                    <label for="contract_meal_allowance" string="Meal Allowance"/>
+                                    <div class="o_row">
+                                        <field name="contract_meal_allowance" readonly="1"/>
+                                        <span>/ month</span>
+                                        <span class="ms-2 text-muted">(<field name="contract_meal_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                                    </div>
+                                    <label for="contract_medical_allowance" string="Medical Allowance"/>
+                                    <div class="o_row">
+                                        <field name="contract_medical_allowance" readonly="1"/>
+                                        <span>/ month</span>
+                                        <span class="ms-2 text-muted">(<field name="contract_medical_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                                    </div>
+                                    <label for="contract_other_allowance" string="Other Allowance"/>
+                                    <div class="o_row">
+                                        <field name="contract_other_allowance" readonly="1"/>
+                                        <span>/ month</span>
+                                        <span class="ms-2 text-muted">(<field name="contract_other_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                                    </div>
+                                    <label for="contract_fixed_allowance" string="Fixed Allowance"/>
+                                    <div class="o_row">
+                                        <field name="contract_fixed_allowance" readonly="1"/>
+                                        <span>/ month</span>
+                                        <span class="ms-2 text-muted">(<field name="contract_fixed_allowance_percent" readonly="1" digits="[16, 2]"/>%)</span>
+                                    </div>
+                                </group>
+                            </group>
+                        </page>
                         <page string="Worked Days &amp; Inputs">
                             <separator string="Worked Days"/>
                             <field name="worked_days_line_ids"

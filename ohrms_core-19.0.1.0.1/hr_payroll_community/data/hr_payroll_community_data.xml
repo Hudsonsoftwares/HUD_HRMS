@@ -61,7 +61,7 @@
             <field name="category_id" ref="hr_payroll_community.BASIC"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.wage</field>
+            <field name="amount_python_compute">result = contract.basic_salary or contract.wage or 0.0</field>
         </record>
         <record id="hr_rule_taxable" model="hr.salary.rule">
             <field name="name">Gross</field>
@@ -89,7 +89,7 @@
             <field name="category_id" ref="hr_payroll_community.HRA"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.hra</field>
+            <field name="amount_python_compute">result = contract.hra or 0.0</field>
         </record>
         <record id="hr_rule_da" model="hr.salary.rule">
             <field name="name">Dearness Allowance</field>
@@ -98,7 +98,7 @@
             <field name="category_id" ref="hr_payroll_community.DA"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.da</field>
+            <field name="amount_python_compute">result = contract.da or 0.0</field>
         </record>
         <record id="hr_rule_travel" model="hr.salary.rule">
             <field name="name">Travel Allowance</field>
@@ -107,7 +107,7 @@
             <field name="category_id" ref="hr_payroll_community.Travel"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.travel_allowance</field>
+            <field name="amount_python_compute">result = contract.travel_allowance or 0.0</field>
         </record>
         <record id="hr_rule_meal" model="hr.salary.rule">
             <field name="name">Meal Allowance</field>
@@ -116,7 +116,7 @@
             <field name="category_id" ref="hr_payroll_community.Meal"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.meal_allowance</field>
+            <field name="amount_python_compute">result = contract.meal_allowance or 0.0</field>
         </record>
         <record id="hr_rule_medical" model="hr.salary.rule">
             <field name="name">Medical Allowance</field>
@@ -125,7 +125,7 @@
             <field name="category_id" ref="hr_payroll_community.Medical"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.medical_allowance</field>
+            <field name="amount_python_compute">result = contract.medical_allowance or 0.0</field>
         </record>
         <record id="hr_rule_other" model="hr.salary.rule">
             <field name="name">Other Allowance</field>
@@ -134,7 +134,16 @@
             <field name="category_id" ref="hr_payroll_community.Other"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.other_allowance</field>
+            <field name="amount_python_compute">result = contract.other_allowance or 0.0</field>
+        </record>
+        <record id="hr_rule_fixed" model="hr.salary.rule">
+            <field name="name">Fixed Allowance</field>
+            <field name="sequence" eval="1"/>
+            <field name="code">FIXED</field>
+            <field name="category_id" ref="hr_payroll_community.ALW"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = contract.fixed_allowance or 0.0</field>
         </record>
         <record id="hr_rule_unpaid" model="hr.salary.rule">
             <field name="name">Unpaid</field>
