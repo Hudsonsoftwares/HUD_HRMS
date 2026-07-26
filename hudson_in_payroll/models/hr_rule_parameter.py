@@ -12,6 +12,7 @@ PF_PARAMETER_MAPPING = {
     'EDLI_RATE': 'hds_in_edli_rate',
     'EPF_ADMIN_RATE': 'hds_in_epf_admin_charge_rate',
     'EDLI_ADMIN_RATE': 'hds_in_edli_admin_charge_rate',
+    'EMPLOYER_EPF_RATE': 'hds_in_employer_epf_rate',
 }
 
 
