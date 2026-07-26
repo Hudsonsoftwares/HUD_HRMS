@@ -58,3 +58,36 @@ class HrPayslip(models.Model):
     def get_pf_eligible_wage(self, localdict=None):
         """Alias for hds_in_get_actual_pf_wage for backwards compatibility."""
         return self.hds_in_get_actual_pf_wage(localdict=localdict)
+
+    def hds_in_get_pf_contribution_wage(self, localdict=None):
+        """
+        Calculates the employee's PF Contribution Wage for this payslip.
+
+        Definition:
+        Phase 6 converts the Actual PF Wage into the statutory PF Contribution Wage based on
+        employee configuration (hds_in_pf_contribution_basis) and statutory wage ceiling.
+
+        - If contribution basis is 'actual_basic' or 'actual_pf_wage':
+            returns Actual PF Wage (no ceiling applied).
+        - If contribution basis is 'statutory_ceiling' or 'statutory_wage_ceiling':
+            returns min(Actual PF Wage, Configured Statutory PF Wage Ceiling).
+        - Statutory PF Wage Ceiling is retrieved via get_pf_parameter('PF_WAGE_CEILING')
+          using payslip period date (date_to).
+        - Reusable across all statutory PF calculation engines (Employee EPF, Employer EPF, EPS, EDLI).
+        - Does NOT calculate any deductions or apply contribution rates.
+        """
+        self.ensure_one()
+        actual_pf_wage = self.hds_in_get_actual_pf_wage(localdict=localdict)
+        basis = self.employee_id.hds_in_pf_contribution_basis
+
+        if basis in ('actual_basic', 'actual_pf_wage'):
+            return actual_pf_wage
+
+        eval_date = self.date_to or fields.Date.today()
+        pf_ceiling = self.env['hr.rule.parameter'].get_pf_parameter('PF_WAGE_CEILING', date=eval_date)
+        return min(actual_pf_wage, pf_ceiling)
+
+    def get_pf_contribution_wage(self, localdict=None):
+        """Alias for hds_in_get_pf_contribution_wage for backwards compatibility."""
+        return self.hds_in_get_pf_contribution_wage(localdict=localdict)
+
