@@ -31,6 +31,28 @@ class ResConfigSettings(models.TransientModel):
         string="EDLI Registration Number"
     )
 
+    # ESIC Company Configuration Related Fields
+    hds_in_esic_applicable = fields.Boolean(
+        related='company_id.hds_in_esic_applicable',
+        readonly=False,
+        string="Enable ESIC"
+    )
+    hds_in_esic_employer_code = fields.Char(
+        related='company_id.hds_in_esic_employer_code',
+        readonly=False,
+        string="ESIC Employer Code"
+    )
+    hds_in_esic_registration_no = fields.Char(
+        related='company_id.hds_in_esic_registration_no',
+        readonly=False,
+        string="ESIC Registration Number"
+    )
+    hds_in_esic_branch_office = fields.Char(
+        related='company_id.hds_in_esic_branch_office',
+        readonly=False,
+        string="ESIC Branch Office"
+    )
+
     hds_in_is_india_company = fields.Boolean(
         string="Is India Company",
         compute='_compute_hds_in_is_india_company'

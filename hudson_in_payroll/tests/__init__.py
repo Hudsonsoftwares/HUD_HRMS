@@ -2,4 +2,4 @@
 from . import test_hr_rule_parameter
 from . import test_pf_wage_basis
 from . import test_pf_contribution_wage
-
+from . import test_esic_company_config

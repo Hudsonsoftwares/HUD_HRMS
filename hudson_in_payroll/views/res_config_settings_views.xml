@@ -60,6 +60,33 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Right Column: ESIC -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="hds_in_esic_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="hds_in_esic_applicable"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="hds_in_esic_applicable" string="Employees' State Insurance (ESIC)" class="fw-bold"/>
+                                <div class="text-muted">
+                                    Enable Employee State Insurance (ESIC) statutory compliance for this company.
+                                </div>
+                                <div class="content-group mt8" invisible="not hds_in_esic_applicable">
+                                    <div class="row mt8">
+                                        <label for="hds_in_esic_employer_code" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_esic_employer_code" placeholder="e.g. 31000123450000101"/>
+                                    </div>
+                                    <div class="row mt8">
+                                        <label for="hds_in_esic_registration_no" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_esic_registration_no" placeholder="e.g. ESIC/MH/3100012"/>
+                                    </div>
+                                    <div class="row mt8">
+                                        <label for="hds_in_esic_branch_office" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_esic_branch_office" placeholder="e.g. Sub-Regional Office Thane"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </xpath>
