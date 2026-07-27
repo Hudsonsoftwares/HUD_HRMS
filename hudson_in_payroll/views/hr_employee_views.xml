@@ -1,24 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Extend Employee Form View with Statutory Information under Personal Information -->
+    <!-- Extend Employee Form View with Statutory Information under Payroll Tab -->
     <record id="hds_in_view_employee_form" model="ir.ui.view">
         <field name="name">hr.employee.form.inherit.hudson.payroll</field>
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//page[@name='personal_information']" position="inside">
-                <group string="STATUTORY INFORMATION" name="hds_in_statutory_info">
-                    <group>
+            <xpath expr="//group[@name='breakdown_validation']" position="after">
+                <group string="Payroll Statutory Information" name="hds_in_statutory_info">
+                    <group string="Employees' Provident Fund (EPF)">
                         <field name="hds_in_epf_applicable"/>
                         <field name="hds_in_uan"/>
                         <field name="hds_in_pf_member_id"/>
                         <field name="hds_in_pf_joining_date"/>
                         <field name="hds_in_existing_epf_member"/>
                     </group>
-                    <group>
+                    <group string="Employees' Pension Scheme (EPS)">
                         <field name="hds_in_eps_applicable"/>
                         <field name="hds_in_existing_eps_member"/>
                         <field name="hds_in_pf_contribution_basis"/>
+                    </group>
+                    <group string="Employees' State Insurance (ESIC)">
+                        <field name="hds_in_esic_applicable"/>
+                        <field name="hds_in_esic_ip_number"/>
+                        <field name="hds_in_esic_joining_date"/>
+                        <field name="hds_in_esic_exit_date"/>
+                        <field name="hds_in_esic_ip_status"/>
+                        <field name="hds_in_esic_contribution_basis" readonly="1"/>
+                        <field name="hds_in_esic_contribution_period"/>
+                        <field name="hds_in_esic_dispensary"/>
+                        <field name="hds_in_esic_exit_reason"/>
                     </group>
                 </group>
             </xpath>

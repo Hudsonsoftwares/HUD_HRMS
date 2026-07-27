@@ -40,3 +40,39 @@ class HrEmployee(models.Model):
         ('actual_basic', 'Actual PF Wage'),
     ], string="PF Contribution Basis", default='statutory_ceiling', required=True,
        help="Basis for calculating PF contribution (capped at statutory wage ceiling vs actual PF wage).")
+
+    # ESIC Information
+    hds_in_esic_applicable = fields.Boolean(
+        string="ESIC Applicable"
+    )
+    hds_in_esic_ip_number = fields.Char(
+        string="ESIC IP Number"
+    )
+    hds_in_esic_joining_date = fields.Date(
+        string="Date of Joining ESIC"
+    )
+    hds_in_esic_exit_date = fields.Date(
+        string="Date of Exit ESIC"
+    )
+    hds_in_esic_ip_status = fields.Selection([
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+    ], string="Insured Person Status")
+    hds_in_esic_contribution_basis = fields.Char(
+        string="Contribution Basis",
+        readonly=True,
+        default="Gross Wages (Statutory)"
+    )
+    hds_in_esic_contribution_period = fields.Char(
+        string="Contribution Period"
+    )
+    hds_in_esic_dispensary = fields.Char(
+        string="ESIC Dispensary"
+    )
+    hds_in_esic_exit_reason = fields.Selection([
+        ('wage_exceeded', 'Salary Exceeded Limit'),
+        ('resigned', 'Resigned'),
+        ('death', 'Death'),
+        ('retired', 'Retired'),
+        ('other', 'Other'),
+    ], string="Reason for Exit ESIC")
