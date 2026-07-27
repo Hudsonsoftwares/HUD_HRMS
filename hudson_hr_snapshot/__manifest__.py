@@ -17,6 +17,7 @@ data even after live employee or contract records are updated.
         'hr',
         'hr_payroll_community',
         'hudson_in_payroll',
+        'ohrms_payroll_reports',
     ],
     'data': [
         'security/hds_hr_snapshot_security.xml',

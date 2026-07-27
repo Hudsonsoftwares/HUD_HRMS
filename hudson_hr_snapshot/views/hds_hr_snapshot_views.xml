@@ -97,9 +97,15 @@
         </field>
     </record>
 
+    <!-- HR Snapshots Group under Reporting -->
+    <menuitem id="menu_hr_snapshots_group"
+              name="HR Snapshots"
+              parent="ohrms_payroll_reports.menu_payroll_reporting"
+              sequence="20"/>
+
     <menuitem id="menu_hds_hr_snapshot"
               name="HR Snapshots"
-              parent="hr_payroll_community.menu_hr_payroll_community_root"
+              parent="menu_hr_snapshots_group"
               action="action_hds_hr_snapshot"
-              sequence="30"/>
+              sequence="10"/>
 </odoo>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Submenu: Statutory Reports under Reporting (ohrms_payroll_reports.menu_payroll_reporting) -->
+    <menuitem id="menu_statutory_reports"
+              name="Statutory Reports"
+              parent="ohrms_payroll_reports.menu_payroll_reporting"
+              sequence="30"/>
+
+    <!-- PF Reports Submenus directly under Statutory Reports -->
+    <menuitem id="menu_pf_register"
+              name="PF Register"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_register_wizard"
+              sequence="10"/>
+
+    <menuitem id="menu_pf_employee_statement"
+              name="Employee PF Statement"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_register_wizard"
+              sequence="15"/>
+
+    <menuitem id="menu_pf_monthly_summary"
+              name="Monthly PF Summary"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_monthly_summary_wizard"
+              sequence="20"/>
+
+    <menuitem id="menu_pf_employee_contribution"
+              name="Employee Contribution Report"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_employee_contribution"
+              sequence="30"/>
+
+    <menuitem id="menu_pf_employer_contribution"
+              name="Employer Contribution Report"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_employer_contribution"
+              sequence="40"/>
+
+    <menuitem id="menu_pf_employee_ledger"
+              name="Employee PF Ledger"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_ledger_wizard"
+              sequence="50"/>
+
+    <menuitem id="menu_pf_contribution_basis"
+              name="Contribution Basis Report"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_basis_wizard"
+              sequence="60"/>
+
+    <menuitem id="menu_pf_ceiling_exception"
+              name="Wage Ceiling Exception Report"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_ceiling_exception_wizard"
+              sequence="70"/>
+
+    <menuitem id="menu_pf_variance"
+              name="PF Variance Report"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_variance_wizard"
+              sequence="80"/>
+
+    <menuitem id="menu_pf_ecr_export"
+              name="ECR Export"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_ecr_wizard"
+              sequence="90"/>
+
+    <!-- Additional PF Diagnostic Tools Submenus -->
+    <menuitem id="menu_pf_hr_snapshot"
+              name="HR Snapshot Report"
+              parent="menu_statutory_reports"
+              action="action_hds_hr_snapshot_report"
+              sequence="100"/>
+
+    <menuitem id="menu_pf_reconciliation"
+              name="PF Reconciliation Report"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_reconciliation_wizard"
+              sequence="110"/>
+
+    <menuitem id="menu_pf_salary_revision"
+              name="Salary Revision Impact Report"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_salary_revision_wizard"
+              sequence="120"/>
+
+    <menuitem id="menu_pf_uan_register"
+              name="UAN Register"
+              parent="menu_statutory_reports"
+              action="action_hds_pf_uan_register_wizard"
+              sequence="130"/>
+</odoo>

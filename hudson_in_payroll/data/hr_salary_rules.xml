@@ -41,5 +41,107 @@
         <record id="hr_payroll_community.hr_rule_unpaid" model="hr.salary.rule">
             <field name="hds_in_include_in_pf_wage">False</field>
         </record>
+
+        <!-- Phase 0 Statutory PF Rules -->
+        <record id="hds_in_rule_epf" model="hr.salary.rule">
+            <field name="name">Employee Provident Fund (EPF)</field>
+            <field name="sequence" eval="150"/>
+            <field name="code">EPF</field>
+            <field name="category_id" ref="hr_payroll_community.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(employee.hds_in_epf_applicable)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+pf_wage = payslip.hds_in_get_pf_contribution_wage(localdict=localdict)
+rate = env['hr.rule.parameter'].get_pf_parameter('EPF_RATE', date=payslip.date_to, as_decimal=True)
+result = -(pf_wage * rate)
+            </field>
+        </record>
+
+        <record id="hds_in_rule_epf_er" model="hr.salary.rule">
+            <field name="name">Employer EPF Contribution</field>
+            <field name="sequence" eval="151"/>
+            <field name="code">EPF_ER</field>
+            <field name="category_id" ref="hr_payroll_community.COMP"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(employee.hds_in_epf_applicable)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+pf_wage = payslip.hds_in_get_pf_contribution_wage(localdict=localdict)
+rate = env['hr.rule.parameter'].get_pf_parameter('EMPLOYER_EPF_RATE', date=payslip.date_to, as_decimal=True)
+result = pf_wage * rate
+            </field>
+        </record>
+
+        <record id="hds_in_rule_eps" model="hr.salary.rule">
+            <field name="name">Employer Pension Scheme (EPS)</field>
+            <field name="sequence" eval="152"/>
+            <field name="code">EPS</field>
+            <field name="category_id" ref="hr_payroll_community.COMP"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(employee.hds_in_epf_applicable and employee.hds_in_eps_applicable)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+pf_wage = payslip.hds_in_get_pf_contribution_wage(localdict=localdict)
+eps_ceiling = env['hr.rule.parameter'].get_pf_parameter('EPS_WAGE_CEILING', date=payslip.date_to)
+eps_wage = min(pf_wage, eps_ceiling)
+rate = env['hr.rule.parameter'].get_pf_parameter('EPS_RATE', date=payslip.date_to, as_decimal=True)
+result = eps_wage * rate
+            </field>
+        </record>
+
+        <record id="hds_in_rule_edli" model="hr.salary.rule">
+            <field name="name">Employer EDLI Contribution</field>
+            <field name="sequence" eval="153"/>
+            <field name="code">EDLI</field>
+            <field name="category_id" ref="hr_payroll_community.COMP"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(employee.hds_in_epf_applicable)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+pf_wage = payslip.hds_in_get_pf_contribution_wage(localdict=localdict)
+edli_ceiling = env['hr.rule.parameter'].get_pf_parameter('EDLI_WAGE_CEILING', date=payslip.date_to)
+edli_wage = min(pf_wage, edli_ceiling)
+rate = env['hr.rule.parameter'].get_pf_parameter('EDLI_RATE', date=payslip.date_to, as_decimal=True)
+result = edli_wage * rate
+            </field>
+        </record>
+
+        <record id="hds_in_rule_epf_admin" model="hr.salary.rule">
+            <field name="name">EPF Admin Charges</field>
+            <field name="sequence" eval="154"/>
+            <field name="code">EPF_ADMIN</field>
+            <field name="category_id" ref="hr_payroll_community.COMP"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(employee.hds_in_epf_applicable)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+pf_wage = payslip.hds_in_get_pf_contribution_wage(localdict=localdict)
+rate = env['hr.rule.parameter'].get_pf_parameter('EPF_ADMIN_RATE', date=payslip.date_to, as_decimal=True)
+result = pf_wage * rate
+            </field>
+        </record>
+
+        <record id="hds_in_rule_edli_admin" model="hr.salary.rule">
+            <field name="name">EDLI Admin Charges</field>
+            <field name="sequence" eval="155"/>
+            <field name="code">EDLI_ADMIN</field>
+            <field name="category_id" ref="hr_payroll_community.COMP"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(employee.hds_in_epf_applicable)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">
+pf_wage = payslip.hds_in_get_pf_contribution_wage(localdict=localdict)
+edli_ceiling = env['hr.rule.parameter'].get_pf_parameter('EDLI_WAGE_CEILING', date=payslip.date_to)
+edli_wage = min(pf_wage, edli_ceiling)
+rate = env['hr.rule.parameter'].get_pf_parameter('EDLI_ADMIN_RATE', date=payslip.date_to, as_decimal=True)
+result = edli_wage * rate
+            </field>
+        </record>
+
+        <!-- Wire Rules into Structure -->
+        <record id="hr_payroll_community.structure_base" model="hr.payroll.structure">
+            <field name="rule_ids" eval="[(4, ref('hds_in_rule_epf')), (4, ref('hds_in_rule_epf_er')), (4, ref('hds_in_rule_eps')), (4, ref('hds_in_rule_edli')), (4, ref('hds_in_rule_epf_admin')), (4, ref('hds_in_rule_edli_admin'))]"/>
+        </record>
     </data>
 </odoo>
