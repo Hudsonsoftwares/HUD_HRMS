@@ -30,6 +30,11 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
         string="EDLI Registration Number"
     )
+    hds_in_enable_statutory_audit = fields.Boolean(
+        related='company_id.hds_in_enable_statutory_audit',
+        readonly=False,
+        string="Enable Statutory Audit Logging"
+    )
 
     # ESIC Company Configuration Related Fields
     hds_in_esic_applicable = fields.Boolean(

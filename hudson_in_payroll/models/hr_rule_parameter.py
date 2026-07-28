@@ -91,6 +91,36 @@ class HrRuleParameter(models.Model):
             return val_float / 100.0
         return val_float
 
+    @api.model
+    def get_parameter(self, code, date=None, as_decimal=False):
+        """
+        Generic statutory parameter lookup for all NEW statutory modules
+        (ESIC, PT, LWF, Gratuity, Bonus, TDS, etc.), introduced going
+        forward. Unlike get_pf_parameter(), this method does NOT accept
+        short mapping keys — callers must always pass the actual,
+        real, hds_in_-prefixed parameter code stored on the
+        hr.rule.parameter record. No mapping dictionary exists or
+        should ever be added for this method — that is the point of
+        it: new statutory codes are self-descriptive and require no
+        translation layer.
+        """
+        param = self.search([('code', '=', code)], limit=1)
+        if not param:
+            raise ValidationError(f"Statutory parameter '{code}' is not defined in the system.")
+
+        val_str = param._get_parameter_value(date=date)
+        if val_str is False:
+            raise ValidationError(f"No effective statutory parameter version found for '{code}' on date {date or fields.Date.today()}.")
+
+        try:
+            val_float = float(val_str)
+        except (ValueError, TypeError):
+            raise ValidationError(f"Invalid non-numeric value '{val_str}' for parameter '{code}'.")
+
+        if as_decimal and param.category in ('rate', 'admin'):
+            return val_float / 100.0
+        return val_float
+
 
 class HrRuleParameterValue(models.Model):
     _name = 'hr.rule.parameter.value'

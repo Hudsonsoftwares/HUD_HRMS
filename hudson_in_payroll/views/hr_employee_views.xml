@@ -6,6 +6,15 @@
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_statutory_audits"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-shield"
+                        invisible="hds_in_statutory_audit_count == 0">
+                    <field name="hds_in_statutory_audit_count" widget="statinfo" string="Statutory Audits"/>
+                </button>
+            </xpath>
             <xpath expr="//group[@name='breakdown_validation']" position="after">
                 <group string="Payroll Statutory Information" name="hds_in_statutory_info">
                     <group string="Employees' Provident Fund (EPF)">
@@ -14,10 +23,15 @@
                         <field name="hds_in_pf_member_id"/>
                         <field name="hds_in_pf_joining_date"/>
                         <field name="hds_in_existing_epf_member"/>
+                        <field name="hds_in_is_international_worker"/>
+                        <field name="hds_in_vpf_type"/>
+                        <field name="hds_in_vpf_percent" invisible="hds_in_vpf_type != 'percent'"/>
+                        <field name="hds_in_vpf_amount" invisible="hds_in_vpf_type != 'fixed'"/>
                     </group>
                     <group string="Employees' Pension Scheme (EPS)">
                         <field name="hds_in_eps_applicable"/>
                         <field name="hds_in_existing_eps_member"/>
+                        <field name="hds_in_higher_pension"/>
                         <field name="hds_in_pf_contribution_basis"/>
                     </group>
                     <group string="Employees' State Insurance (ESIC)">

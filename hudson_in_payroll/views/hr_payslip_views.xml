@@ -1,3 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Extend Payslip Form View with Statutory Audits Smart Button -->
+    <record id="hds_in_view_hr_payslip_form" model="ir.ui.view">
+        <field name="name">hr.payslip.form.inherit.hudson.payroll</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll_community.hr_payslip_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_statutory_audits"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-shield"
+                        invisible="hds_in_statutory_audit_count == 0">
+                    <field name="hds_in_statutory_audit_count" widget="statinfo" string="Statutory Audits"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
 </odoo>

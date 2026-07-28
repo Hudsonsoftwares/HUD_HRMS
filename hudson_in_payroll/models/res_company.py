@@ -25,6 +25,11 @@ class ResCompany(models.Model):
         string="EDLI Registration Number",
         help="Registration/Policy Number for EDLI."
     )
+    hds_in_enable_statutory_audit = fields.Boolean(
+        string="Enable Statutory Calculation Audit Logging",
+        default=True,
+        help="Record detailed calculation input/output/parameter audit logs for statutory compliance."
+    )
 
     # ESIC Company Configuration Fields
     hds_in_esic_applicable = fields.Boolean(
@@ -56,6 +61,7 @@ class ResCompany(models.Model):
         try:
             cr.execute("""
                 ALTER TABLE res_company
+                ADD COLUMN IF NOT EXISTS hds_in_enable_statutory_audit boolean DEFAULT true,
                 ADD COLUMN IF NOT EXISTS hds_in_esic_applicable boolean DEFAULT true,
                 ADD COLUMN IF NOT EXISTS hds_in_esic_employer_code varchar,
                 ADD COLUMN IF NOT EXISTS hds_in_esic_registration_no varchar,
@@ -73,6 +79,7 @@ class ResCompany(models.Model):
         cr = self.env.cr
         cr.execute("""
             ALTER TABLE res_company
+            ADD COLUMN IF NOT EXISTS hds_in_enable_statutory_audit boolean DEFAULT true,
             ADD COLUMN IF NOT EXISTS hds_in_esic_applicable boolean DEFAULT true,
             ADD COLUMN IF NOT EXISTS hds_in_esic_employer_code varchar,
             ADD COLUMN IF NOT EXISTS hds_in_esic_registration_no varchar,

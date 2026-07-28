@@ -219,11 +219,10 @@ class HrSalaryRule(models.Model):
                             'result_qty' in localdict and
                             localdict['result_qty'] or 1.0, 'result_rate'
                             in localdict and localdict['result_rate'] or 100.0)
-                except:
-                    raise UserError(
-                        _('Wrong python code defined for salary '
-                          'rule %s (%s).') % (
-                            rec.name, rec.code))
+                except Exception as e:
+                   import traceback
+                   traceback.print_exc()
+                   raise
 
     def _satisfy_condition(self, localdict):
         """
@@ -239,18 +238,15 @@ class HrSalaryRule(models.Model):
                 result = safe_eval(self.condition_range, localdict)
                 return (
                             self.condition_range_min <= result <= self.condition_range_max or False)
-            except:
-                raise UserError(
-                    _('Wrong range condition defined for '
-                      'salary rule %s (%s).') % (
-                        self.name, self.code))
+            except Exception:
+                import traceback
+                traceback.print_exc()
+                raise
         else:  # python code
             try:
-                safe_eval(self.condition_python, localdict, mode='exec',
-                          nocopy=True)
+                safe_eval(self.condition_python, localdict, mode='exec')
                 return 'result' in localdict and localdict['result'] or False
-            except:
-                raise UserError(
-                    _('Wrong python condition defined for '
-                      'salary rule %s (%s).') % (
-                        self.name, self.code))
+            except Exception:
+                import traceback
+                traceback.print_exc()
+                raise

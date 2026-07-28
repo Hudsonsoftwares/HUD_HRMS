@@ -1,3 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_hr_rule_parameter_manager,access.hr.rule.parameter.manager,model_hr_rule_parameter,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
 access_hr_rule_parameter_value_manager,access.hr.rule.parameter.value.manager,model_hr_rule_parameter_value,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
+access_hds_in_payroll_audit_user,access.hds.in.payroll.audit.user,model_hds_in_payroll_audit,hr_payroll_community.group_hr_payroll_community_user,1,0,0,0
+access_hds_in_payroll_audit_manager,access.hds.in.payroll.audit.manager,model_hds_in_payroll_audit,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1

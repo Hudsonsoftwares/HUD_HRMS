@@ -11,7 +11,9 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/hr_salary_rule_category.xml',
         'data/hr_rule_parameters.xml',
+        'data/hr_salary_rule_pf.xml',
         'data/hr_salary_rules.xml',
         'views/res_config_settings_views.xml',
         'views/hr_rule_parameter_views.xml',
@@ -19,6 +21,7 @@
         'views/hr_salary_rule_views.xml',
         'views/hr_contract_views.xml',
         'views/hr_payslip_views.xml',
+        'views/hds_in_payroll_audit_views.xml',
     ],
     'installable': True,
     'application': False,

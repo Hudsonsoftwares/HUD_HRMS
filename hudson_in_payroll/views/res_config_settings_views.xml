@@ -87,6 +87,18 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Statutory Audit Setting Box -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="hds_in_statutory_audit_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="hds_in_enable_statutory_audit"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="hds_in_enable_statutory_audit" string="Statutory Calculation Audit Logging" class="fw-bold"/>
+                                <div class="text-muted">
+                                    Record immutable JSON calculation input/output/parameter audit logs for statutory compliance &amp; inspection.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </xpath>
