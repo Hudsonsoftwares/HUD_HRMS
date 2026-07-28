@@ -224,6 +224,10 @@ class HrPayslip(models.Model):
     # -------------------------------------------------------------------------
     # PUBLIC ORCHESTRATION API FOR SALARY RULES (Zero Arguments in XML)
     # -------------------------------------------------------------------------
+    def hds_in_compute_pf_wage(self):
+        """Public API entrypoint for PF_WAGE Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(EPFService, 'compute_pf_wage')
+
     def hds_in_compute_employee_epf(self):
         """Public API entrypoint for Employee EPF Salary Rule (Zero arguments)."""
         return self._delegate_statutory_service(EPFService, 'compute_employee_epf', negate=True)
@@ -256,21 +260,39 @@ class HrPayslip(models.Model):
         """Public API entrypoint for EDLI Admin Charges Salary Rule (Zero arguments)."""
         return self._delegate_statutory_service(EPFService, 'compute_edli_admin')
 
+    def hds_in_compute_epf_admin_charge(self):
+        """Alias for hds_in_compute_epf_admin for backward compatibility."""
+        return self.hds_in_compute_epf_admin()
+
+    def hds_in_compute_edli_admin_charge(self):
+        """Alias for hds_in_compute_edli_admin for backward compatibility."""
+        return self.hds_in_compute_edli_admin()
+
     # -------------------------------------------------------------------------
     # WAGE RESOLUTION HELPERS
     # -------------------------------------------------------------------------
     def hds_in_get_actual_pf_wage(self, localdict=None):
-        """Returns the actual PF wage."""
+        """
+        Calculates actual PF-eligible wage by summing components with hds_in_include_in_pf_wage = True.
+        Does NOT read localdict['PF_WAGE'] to prevent circular dependency.
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+
         self.ensure_one()
-
         ld = localdict or self._get_payroll_eval_context(raise_if_missing=False)
-
-        # During payslip computation, use the already calculated PF_WAGE value
-        if ld:
-            return float(ld.get('PF_WAGE', 0.0) or 0.0)
-
-        # Fallback for already-computed payslips
         pf_wage = 0.0
+
+        if ld:
+            pf_rules = self.env['hr.salary.rule'].search([
+                ('hds_in_include_in_pf_wage', '=', True)
+            ])
+            for rule in pf_rules:
+                amount = float(ld.get(rule.code, 0.0) or 0.0)
+                _logger.info("PF Rule %s -> %s", rule.code, amount)
+                pf_wage += amount
+            return pf_wage
+
         for line in self.line_ids:
             if line.salary_rule_id.hds_in_include_in_pf_wage:
                 pf_wage += line.total

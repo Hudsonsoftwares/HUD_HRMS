@@ -99,3 +99,14 @@ class TestEPFService(TransactionCase):
         # Employer EPF Share (2040 - 1250 = 790)
         epf_share = service.compute_employer_epf_share(self.payslip)
         self.assertEqual(epf_share, 790.0)
+
+    def test_07_compute_pf_wage_delegation(self):
+        """Verifies compute_pf_wage delegates directly to get_actual_pf_wage."""
+        localdict = {'rules': {'BASIC': {'total': 18000.0}}}
+        service = EPFService(self.env, localdict=localdict)
+
+        pf_wage = service.compute_pf_wage(self.payslip)
+        self.assertEqual(pf_wage, 18000.0)
+
+        payslip_pf_wage = self.payslip.hds_in_compute_pf_wage(localdict=localdict)
+        self.assertEqual(payslip_pf_wage, 18000.0)

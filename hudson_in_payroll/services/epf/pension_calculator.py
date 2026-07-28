@@ -23,13 +23,13 @@ class EPFPensionCalculator(BaseStatutoryService):
             if age >= 58:
                 return 0.0
 
-        actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
-        eps_rate = self.get_pf_parameter('EPS_RATE', date=eval_date, as_decimal=True)
+        pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
+        eps_rate = self.get_pf_parameter('hds_in_eps_rate', date=eval_date, as_decimal=True)
 
-        if employee.hds_in_higher_pension or employee.hds_in_is_international_worker:
-            eps_wage = actual_pf_wage
+        if employee.hds_in_higher_pension or employee.hds_in_is_international_worker or employee.hds_in_pf_contribution_basis in ('actual_basic', 'actual_pf_wage'):
+            eps_wage = pf_wage
         else:
-            eps_ceiling = self.get_pf_parameter('EPS_WAGE_CEILING', date=eval_date)
-            eps_wage = min(actual_pf_wage, eps_ceiling)
+            eps_ceiling = self.get_pf_parameter('hds_in_eps_wage_ceiling', date=eval_date)
+            eps_wage = min(pf_wage, eps_ceiling)
 
         return self.round_statutory(eps_wage * eps_rate)

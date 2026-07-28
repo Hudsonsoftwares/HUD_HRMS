@@ -117,5 +117,19 @@
             <field name="parameter_value">0</field>
             <field name="description">EPFO Notification S.O. 1091(E) effective 01-Apr-2017 waiving EDLI admin charges (stored as 0, not hardcoded in code).</field>
         </record>
+
+        <!-- 9. PF: Employer EPF Rate (12%) -->
+        <record id="hds_in_employer_epf_rate" model="hr.rule.parameter">
+            <field name="name">PF: Employer EPF Rate</field>
+            <field name="code">hds_in_employer_epf_rate</field>
+            <field name="category">rate</field>
+            <field name="description">Statutory Employer Provident Fund (EPF) contribution rate percentage (12%). Statutory basis: EPF Scheme 1952 Paragraph 29.</field>
+        </record>
+        <record id="hds_in_employer_epf_rate_val_1" model="hr.rule.parameter.value">
+            <field name="parameter_id" ref="hds_in_employer_epf_rate"/>
+            <field name="date_from">2014-09-01</field>
+            <field name="parameter_value">12</field>
+            <field name="description">EPFO Gazette Notification G.S.R. 608(E) effective 01-Sep-2014.</field>
+        </record>
     </data>
 </odoo>

@@ -62,7 +62,7 @@
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employer_epf()]]></field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employer_total_pf()]]></field>
             <field name="appears_on_payslip" eval="False"/>
             <field name="active" eval="True"/>
         </record>
@@ -79,9 +79,21 @@
             <field name="active" eval="True"/>
         </record>
 
+        <record id="hds_in_rule_epf_share" model="hr.salary.rule">
+            <field name="name">Employer EPF Share</field>
+            <field name="sequence" eval="153"/>
+            <field name="code">EPF_SHARE</field>
+            <field name="category_id" ref="hr_payroll_community.COMP"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employer_epf()]]></field>
+            <field name="appears_on_payslip" eval="False"/>
+            <field name="active" eval="True"/>
+        </record>
+
         <record id="hds_in_rule_edli" model="hr.salary.rule">
             <field name="name">Employer EDLI Contribution</field>
-            <field name="sequence" eval="153"/>
+            <field name="sequence" eval="154"/>
             <field name="code">EDLI</field>
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
@@ -93,7 +105,7 @@
 
         <record id="hds_in_rule_epf_admin" model="hr.salary.rule">
             <field name="name">EPF Admin Charges</field>
-            <field name="sequence" eval="154"/>
+            <field name="sequence" eval="155"/>
             <field name="code">EPF_ADMIN</field>
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
@@ -105,10 +117,11 @@
 
         <record id="hds_in_rule_edli_admin" model="hr.salary.rule">
             <field name="name">EDLI Admin Charges</field>
-            <field name="sequence" eval="155"/>
+            <field name="sequence" eval="156"/>
             <field name="code">EDLI_ADMIN</field>
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
             <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_edli_admin()]]></field>
             <field name="appears_on_payslip" eval="False"/>
             <field name="active" eval="True"/>
@@ -116,7 +129,7 @@
 
         <!-- Wire Rules into Structure -->
         <record id="hr_payroll_community.structure_base" model="hr.payroll.structure">
-            <field name="rule_ids" eval="[(4, ref('hds_in_rule_epf')), (4, ref('hds_in_rule_epf_er')), (4, ref('hds_in_rule_eps')), (4, ref('hds_in_rule_edli')), (4, ref('hds_in_rule_epf_admin')), (4, ref('hds_in_rule_edli_admin'))]"/>
+            <field name="rule_ids" eval="[(4, ref('hds_in_rule_epf')), (4, ref('hds_in_rule_epf_er')), (4, ref('hds_in_rule_eps')), (4, ref('hds_in_rule_epf_share')), (4, ref('hds_in_rule_edli')), (4, ref('hds_in_rule_epf_admin')), (4, ref('hds_in_rule_edli_admin'))]"/>
         </record>
     </data>
 </odoo>

@@ -23,7 +23,7 @@ class EPFEmployerCalculator(BaseStatutoryService):
 
         eval_date = payslip.date_to or fields.Date.today()
         pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
-        employer_epf_rate = self.get_pf_parameter('EMPLOYER_EPF_RATE', date=eval_date, as_decimal=True)
+        employer_epf_rate = self.get_pf_parameter('hds_in_employer_epf_rate', date=eval_date, as_decimal=True)
 
         return self.round_statutory(pf_wage * employer_epf_rate)
 
@@ -55,15 +55,15 @@ class EPFEmployerCalculator(BaseStatutoryService):
             return 0.0
 
         eval_date = payslip.date_to or fields.Date.today()
-        actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
+        pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
 
-        if employee.hds_in_is_international_worker:
-            edli_wage = actual_pf_wage
+        if employee.hds_in_is_international_worker or employee.hds_in_pf_contribution_basis in ('actual_basic', 'actual_pf_wage'):
+            edli_wage = pf_wage
         else:
-            edli_ceiling = self.get_pf_parameter('EDLI_WAGE_CEILING', date=eval_date)
-            edli_wage = min(actual_pf_wage, edli_ceiling)
+            edli_ceiling = self.get_pf_parameter('hds_in_edli_wage_ceiling', date=eval_date)
+            edli_wage = min(pf_wage, edli_ceiling)
 
-        edli_rate = self.get_pf_parameter('EDLI_RATE', date=eval_date, as_decimal=True)
+        edli_rate = self.get_pf_parameter('hds_in_edli_rate', date=eval_date, as_decimal=True)
         return self.round_statutory(edli_wage * edli_rate)
 
     def compute_epf_admin(self, payslip):
@@ -73,7 +73,7 @@ class EPFEmployerCalculator(BaseStatutoryService):
 
         eval_date = payslip.date_to or fields.Date.today()
         pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
-        admin_rate = self.get_pf_parameter('EPF_ADMIN_RATE', date=eval_date, as_decimal=True)
+        admin_rate = self.get_pf_parameter('hds_in_epf_admin_charge_rate', date=eval_date, as_decimal=True)
         return self.round_statutory(pf_wage * admin_rate)
 
     def compute_edli_admin(self, payslip):
@@ -82,13 +82,13 @@ class EPFEmployerCalculator(BaseStatutoryService):
             return 0.0
 
         eval_date = payslip.date_to or fields.Date.today()
-        actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
+        pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
 
-        if employee.hds_in_is_international_worker:
-            edli_wage = actual_pf_wage
+        if employee.hds_in_is_international_worker or employee.hds_in_pf_contribution_basis in ('actual_basic', 'actual_pf_wage'):
+            edli_wage = pf_wage
         else:
-            edli_ceiling = self.get_pf_parameter('EDLI_WAGE_CEILING', date=eval_date)
-            edli_wage = min(actual_pf_wage, edli_ceiling)
+            edli_ceiling = self.get_pf_parameter('hds_in_edli_wage_ceiling', date=eval_date)
+            edli_wage = min(pf_wage, edli_ceiling)
 
-        admin_rate = self.get_pf_parameter('EDLI_ADMIN_RATE', date=eval_date, as_decimal=True)
+        admin_rate = self.get_pf_parameter('hds_in_edli_admin_charge_rate', date=eval_date, as_decimal=True)
         return self.round_statutory(edli_wage * admin_rate)
