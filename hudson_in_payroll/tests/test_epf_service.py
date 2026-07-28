@@ -71,10 +71,31 @@ class TestEPFService(TransactionCase):
         contribution_wage = service.wage_calc.get_pf_contribution_wage(self.payslip)
         self.assertEqual(contribution_wage, 15000.0)
 
-        # 2. Calculator & Facade return positive float 1800.0 (called without localdict param!)
+        # 2. Calculator & Facade return positive float 1800.0
         epf_amount = service.compute_employee_epf(self.payslip)
         self.assertEqual(epf_amount, 1800.0)
 
         # 3. HrPayslip API converts to negative deduction -1800.0
         payslip_deduction = self.payslip.hds_in_compute_employee_epf(localdict=localdict)
         self.assertEqual(payslip_deduction, -1800.0)
+
+    def test_06_employer_epf_total_vs_share(self):
+        """
+        Verifies Total Employer PF (12% = ₹2,040) vs Employer EPF Share (₹790).
+        PF Wage = ₹17,000 (actual_pf_wage basis)
+        """
+        self.employee.hds_in_pf_contribution_basis = 'actual_basic'
+        localdict = {'rules': {'BASIC': {'total': 17000.0}}}
+        service = EPFService(self.env, localdict=localdict)
+
+        # Total 12% Employer PF Contribution
+        total_pf = service.compute_employer_total_pf(self.payslip)
+        self.assertEqual(total_pf, 2040.0)
+
+        # Employer EPS (8.33% capped at 15k)
+        eps = service.compute_employer_eps(self.payslip)
+        self.assertEqual(eps, 1250.0)
+
+        # Employer EPF Share (2040 - 1250 = 790)
+        epf_share = service.compute_employer_epf_share(self.payslip)
+        self.assertEqual(epf_share, 790.0)

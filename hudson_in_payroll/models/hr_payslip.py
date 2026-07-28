@@ -7,15 +7,22 @@ from ..services.epf.epf_service import EPFService
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
 
+    # Transient in-memory dictionary cache for active payslip evaluation contexts
+    _eval_contexts = {}
+
     # -------------------------------------------------------------------------
     # STATUTORY CONTEXT INJECTION HOOK
     # -------------------------------------------------------------------------
     def _get_statutory_context(self, localdict):
         """
         Extensible hook to inject domain services and actual recordsets into localdict.
+        Stores localdict in HrPayslip._eval_contexts[self.id]
+        so that payslip_record.hds_in_compute_*() calls require ZERO parameters in XML.
+        
         Future localization modules (ESIC, PT, LWF, TDS) extend this hook via super().
         """
         self.ensure_one()
+        HrPayslip._eval_contexts[self.id] = localdict
         localdict.update({
             'epf_service': EPFService(self.env, localdict=localdict),
             'payslip_record': self,
@@ -131,134 +138,139 @@ class HrPayslip(models.Model):
         sorted_rule_ids = [id for id, sequence in sorted(rule_ids, key=lambda x: x[1])]
         sorted_rules = self.env['hr.salary.rule'].browse(sorted_rule_ids)
 
-        for contract in contracts:
-            employee = contract.employee_id
-            localdict = dict(baselocaldict, employee=employee, contract=contract)
+        try:
+            for contract in contracts:
+                employee = contract.employee_id
+                localdict = dict(baselocaldict, employee=employee, contract=contract)
 
-            # INJECTION HOOK: Inject epf_service and payslip_record into localdict
-            localdict = payslip._get_statutory_context(localdict)
+                # INJECTION HOOK: Inject epf_service and payslip_record into localdict & store _eval_contexts
+                localdict = payslip._get_statutory_context(localdict)
 
-            for rule in sorted_rules:
-                key = rule.code + '-' + str(contract.id)
-                localdict['result'] = None
-                localdict['result_qty'] = 1.0
-                localdict['result_rate'] = 100
+                for rule in sorted_rules:
+                    key = rule.code + '-' + str(contract.id)
+                    localdict['result'] = None
+                    localdict['result_qty'] = 1.0
+                    localdict['result_rate'] = 100
 
-                if rule._satisfy_condition(localdict) and rule.id not in blacklist:
-                    amount, qty, rate = rule._compute_rule(localdict)
-
-                    if rule.code == "EPF":
-                        print("\n" + "=" * 60)
-                        print("EPF RULE EXECUTED")
-                        print("Rule ID:", rule.id)
-                        print("Rule Name:", rule.name)
-                        print("Amount:", amount)
-                        print("Qty:", qty)
-                        print("Rate:", rate)
-                        print("Total:", amount * qty * rate / 100.0)
-                        print("=" * 60)
-
-                    previous_amount = rule.code in localdict and localdict[rule.code] or 0.0
-                    tot_rule = (amount * qty * rate / 100.0)
-                    localdict[rule.code] = tot_rule
-                    rules_dict[rule.code] = rule
-                    localdict = _sum_salary_rule_category(localdict, rule.category_id, tot_rule - previous_amount)
-                    result_dict[key] = {
-                        'salary_rule_id': rule.id,
-                        'contract_id': contract.id,
-                        'name': rule.name,
-                        'code': rule.code,
-                        'category_id': rule.category_id.id,
-                        'sequence': rule.sequence,
-                        'appears_on_payslip': rule.appears_on_payslip,
-                        'condition_select': rule.condition_select,
-                        'condition_python': rule.condition_python,
-                        'condition_range': rule.condition_range,
-                        'condition_range_min': rule.condition_range_min,
-                        'condition_range_max': rule.condition_range_max,
-                        'amount_select': rule.amount_select,
-                        'amount_fix': rule.amount_fix,
-                        'amount_python_compute': rule.amount_python_compute,
-                        'amount_percentage': rule.amount_percentage,
-                        'amount_percentage_base': rule.amount_percentage_base,
-                        'register_id': rule.register_id.id,
-                        'amount': amount,
-                        'employee_id': contract.employee_id.id,
-                        'quantity': qty,
-                        'rate': rate,
-                    }
-                else:
-                    blacklist += [id for id, seq in rule._recursive_search_of_rules()]
+                    if rule._satisfy_condition(localdict) and rule.id not in blacklist:
+                        amount, qty, rate = rule._compute_rule(localdict)
+                        previous_amount = rule.code in localdict and localdict[rule.code] or 0.0
+                        tot_rule = (amount * qty * rate / 100.0)
+                        localdict[rule.code] = tot_rule
+                        rules_dict[rule.code] = rule
+                        localdict = _sum_salary_rule_category(localdict, rule.category_id, tot_rule - previous_amount)
+                        result_dict[key] = {
+                            'salary_rule_id': rule.id,
+                            'contract_id': contract.id,
+                            'name': rule.name,
+                            'code': rule.code,
+                            'category_id': rule.category_id.id,
+                            'sequence': rule.sequence,
+                            'appears_on_payslip': rule.appears_on_payslip,
+                            'condition_select': rule.condition_select,
+                            'condition_python': rule.condition_python,
+                            'condition_range': rule.condition_range,
+                            'condition_range_min': rule.condition_range_min,
+                            'condition_range_max': rule.condition_range_max,
+                            'amount_select': rule.amount_select,
+                            'amount_fix': rule.amount_fix,
+                            'amount_python_compute': rule.amount_python_compute,
+                            'amount_percentage': rule.amount_percentage,
+                            'amount_percentage_base': rule.amount_percentage_base,
+                            'register_id': rule.register_id.id,
+                            'amount': amount,
+                            'employee_id': contract.employee_id.id,
+                            'quantity': qty,
+                            'rate': rate,
+                        }
+                    else:
+                        blacklist += [id for id, seq in rule._recursive_search_of_rules()]
+        finally:
+            # Clean up transient context after computation
+            HrPayslip._eval_contexts.pop(payslip_id, None)
 
         return list(result_dict.values())
 
     # -------------------------------------------------------------------------
-    # PUBLIC ORCHESTRATION API FOR SALARY RULES
+    # PRIVATE STATUTORY DELEGATION HELPERS
     # -------------------------------------------------------------------------
-    def hds_in_compute_employee_epf(self, localdict=None):
-        """Public API entrypoint for Employee EPF Salary Rule."""
+    def _get_payroll_eval_context(self, raise_if_missing=True):
+        """
+        Safely retrieves the transient evaluation context (_eval_context)
+        bound during _get_payslip_lines execution.
+        Raises UserError if executed outside active payslip sheet computation.
+        """
         self.ensure_one()
-        amount = EPFService(self.env).compute_employee_epf(self, localdict=localdict)
-        return -amount
+        eval_ctx = HrPayslip._eval_contexts.get(self.id)
+        if not eval_ctx and raise_if_missing:
+            raise UserError(_(
+                "Statutory calculation methods on 'hr.payslip' can only be executed "
+                "during active payslip sheet computation."
+            ))
+        return eval_ctx
 
-    def hds_in_compute_employer_epf(self, localdict=None):
-        """Public API entrypoint for Employer EPF Share Salary Rule."""
+    def _delegate_statutory_service(self, service_class, compute_method_name, negate=False):
+        """
+        Generic DRY helper to instantiate statutory service facades with evaluation context
+        and delegate computation cleanly without repeating validation logic.
+        """
         self.ensure_one()
-        return EPFService(self.env).compute_employer_epf(self, localdict=localdict)
+        eval_ctx = self._get_payroll_eval_context(raise_if_missing=True)
+        service = service_class(self.env, localdict=eval_ctx)
+        compute_fn = getattr(service, compute_method_name)
+        amount = compute_fn(self)
+        return -amount if negate else amount
 
-    def hds_in_compute_employer_eps(self, localdict=None):
-        """Public API entrypoint for Employer Pension Scheme (EPS) Salary Rule."""
-        self.ensure_one()
-        return EPFService(self.env).compute_employer_eps(self, localdict=localdict)
+    # -------------------------------------------------------------------------
+    # PUBLIC ORCHESTRATION API FOR SALARY RULES (Zero Arguments in XML)
+    # -------------------------------------------------------------------------
+    def hds_in_compute_employee_epf(self):
+        """Public API entrypoint for Employee EPF Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(EPFService, 'compute_employee_epf', negate=True)
 
-    def hds_in_compute_employer_edli(self, localdict=None):
-        """Public API entrypoint for EDLI Contribution Salary Rule."""
-        self.ensure_one()
-        return EPFService(self.env).compute_employer_edli(self, localdict=localdict)
+    def hds_in_compute_employer_total_pf(self):
+        """Public API entrypoint for Total Employer PF Contribution (12% = ₹2,040)."""
+        return self._delegate_statutory_service(EPFService, 'compute_employer_total_pf')
 
-    def hds_in_compute_epf_admin(self, localdict=None):
-        """Public API entrypoint for EPF Admin Charges Salary Rule."""
-        self.ensure_one()
-        return EPFService(self.env).compute_epf_admin(self, localdict=localdict)
+    def hds_in_compute_employer_epf_share(self):
+        """Public API entrypoint for Net Employer EPF Share (12% - EPS = ₹790)."""
+        return self._delegate_statutory_service(EPFService, 'compute_employer_epf_share')
 
-    def hds_in_compute_edli_admin(self, localdict=None):
-        """Public API entrypoint for EDLI Admin Charges Salary Rule."""
-        self.ensure_one()
-        return EPFService(self.env).compute_edli_admin(self, localdict=localdict)
+    def hds_in_compute_employer_epf(self):
+        """Backward compatible entrypoint for Net Employer EPF Share (₹790)."""
+        return self._delegate_statutory_service(EPFService, 'compute_employer_epf')
+
+    def hds_in_compute_employer_eps(self):
+        """Public API entrypoint for Employer Pension Scheme (EPS) Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(EPFService, 'compute_employer_eps')
+
+    def hds_in_compute_employer_edli(self):
+        """Public API entrypoint for Employer EDLI Contribution Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(EPFService, 'compute_employer_edli')
+
+    def hds_in_compute_epf_admin(self):
+        """Public API entrypoint for EPF Admin Charges Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(EPFService, 'compute_epf_admin')
+
+    def hds_in_compute_edli_admin(self):
+        """Public API entrypoint for EDLI Admin Charges Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(EPFService, 'compute_edli_admin')
 
     # -------------------------------------------------------------------------
     # WAGE RESOLUTION HELPERS
     # -------------------------------------------------------------------------
     def hds_in_get_actual_pf_wage(self, localdict=None):
-        """Calculates actual PF-eligible wage by summing components with hds_in_include_in_pf_wage = True."""
+        """Returns the actual PF wage."""
         self.ensure_one()
+
+        ld = localdict or self._get_payroll_eval_context(raise_if_missing=False)
+
+        # During payslip computation, use the already calculated PF_WAGE value
+        if ld:
+            return float(ld.get('PF_WAGE', 0.0) or 0.0)
+
+        # Fallback for already-computed payslips
         pf_wage = 0.0
-
-        if localdict:
-            rules_dict = {}
-            if 'rules' in localdict and hasattr(localdict['rules'], 'dict'):
-                rules_dict = localdict['rules'].dict
-            elif 'rules' in localdict and isinstance(localdict['rules'], dict):
-                rules_dict = localdict['rules']
-
-            if rules_dict:
-                rule_codes = list(rules_dict.keys())
-                pf_rules = self.env['hr.salary.rule'].search([
-                    ('code', 'in', rule_codes),
-                    ('hds_in_include_in_pf_wage', '=', True)
-                ])
-                pf_rule_codes = set(pf_rules.mapped('code'))
-                for code in pf_rule_codes:
-                    rule_val = rules_dict.get(code)
-                    if rule_val:
-                        amt = getattr(rule_val, 'total', False)
-                        if amt is False and isinstance(rule_val, dict):
-                            amt = rule_val.get('total', 0.0)
-                        if amt is False and isinstance(rule_val, (int, float)):
-                            amt = float(rule_val)
-                        pf_wage += (amt or 0.0)
-                return pf_wage
-
         for line in self.line_ids:
             if line.salary_rule_id.hds_in_include_in_pf_wage:
                 pf_wage += line.total
@@ -272,7 +284,8 @@ class HrPayslip(models.Model):
     def hds_in_get_pf_contribution_wage(self, localdict=None):
         """Calculates employee's PF Contribution Wage for this payslip."""
         self.ensure_one()
-        return EPFService(self.env).wage_calc.get_pf_contribution_wage(self, localdict=localdict)
+        ld = localdict or self._get_payroll_eval_context(raise_if_missing=False)
+        return EPFService(self.env, localdict=ld).wage_calc.get_pf_contribution_wage(self)
 
     def get_pf_contribution_wage(self, localdict=None):
         """Alias for hds_in_get_pf_contribution_wage for backwards compatibility."""

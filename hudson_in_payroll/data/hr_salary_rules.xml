@@ -42,7 +42,7 @@
             <field name="hds_in_include_in_pf_wage">False</field>
         </record>
 
-        <!-- Enterprise Statutory PF Rules (Anti-Gravity Service Delegated) -->
+        <!-- Enterprise Statutory PF Rules (Thin HrPayslip API Delegated) -->
         <record id="hds_in_rule_epf" model="hr.salary.rule">
             <field name="name">Employee Provident Fund (EPF)</field>
             <field name="sequence" eval="150"/>
@@ -50,7 +50,7 @@
             <field name="category_id" ref="hr_payroll_community.DED"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = -epf_service.compute_employee_epf(payslip_record)]]></field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employee_epf()]]></field>
             <field name="appears_on_payslip" eval="True"/>
             <field name="active" eval="True"/>
         </record>
@@ -62,7 +62,7 @@
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = epf_service.compute_employer_epf(payslip_record)]]></field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employer_epf()]]></field>
             <field name="appears_on_payslip" eval="False"/>
             <field name="active" eval="True"/>
         </record>
@@ -74,7 +74,7 @@
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = epf_service.compute_employer_eps(payslip_record)]]></field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employer_eps()]]></field>
             <field name="appears_on_payslip" eval="False"/>
             <field name="active" eval="True"/>
         </record>
@@ -86,7 +86,7 @@
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = epf_service.compute_employer_edli(payslip_record)]]></field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employer_edli()]]></field>
             <field name="appears_on_payslip" eval="False"/>
             <field name="active" eval="True"/>
         </record>
@@ -98,7 +98,7 @@
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = epf_service.compute_epf_admin(payslip_record)]]></field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_epf_admin()]]></field>
             <field name="appears_on_payslip" eval="False"/>
             <field name="active" eval="True"/>
         </record>
@@ -109,8 +109,7 @@
             <field name="code">EDLI_ADMIN</field>
             <field name="category_id" ref="hr_payroll_community.COMP"/>
             <field name="condition_select">none</field>
-            <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = epf_service.compute_edli_admin(payslip_record)]]></field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_edli_admin()]]></field>
             <field name="appears_on_payslip" eval="False"/>
             <field name="active" eval="True"/>
         </record>

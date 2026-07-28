@@ -22,6 +22,7 @@
 #############################################################################
 from datetime import date, datetime, time
 from dateutil.relativedelta import relativedelta
+from odoo.addons.hudson_in_payroll.services.epf.epf_service import EPFService
 from odoo import api, fields, models, tools, _
 from odoo.exceptions import UserError, ValidationError
 from pytz import timezone
@@ -503,16 +504,38 @@ class HrPayslip(models.Model):
             employee = contract.employee_id
             localdict = dict(baselocaldict, employee=employee,
                              contract=contract)
+            localdict.update({
+                'epf_service': EPFService(self.env, localdict=localdict),
+                'payslip_record': payslip,
+            })
             for rule in sorted_rules:
                 key = rule.code + '-' + str(contract.id)
                 localdict['result'] = None
                 localdict['result_qty'] = 1.0
                 localdict['result_rate'] = 100
                 # check if the rule can be applied
-                if rule._satisfy_condition(
-                        localdict) and rule.id not in blacklist:
+                print("Checking:", rule.code)
+
+                condition = rule._satisfy_condition(localdict)
+                print("Condition:", condition)
+
+                if rule.code == "EPF_ER":
+                    print("Found EPF_ER rule")
+
+                    if condition and rule.id not in blacklist:
+                       if rule.code == 'EPF_ER':
+                          print("Before compute")
+                          print("PF_WAGE:", localdict.get('PF_WAGE'))
+                          print("Employee:", employee.name)
+
                     # compute the amount of the rule
                     amount, qty, rate = rule._compute_rule(localdict)
+
+                    if rule.code == 'EPF_ER':
+                        print("After compute")
+                        print("Amount:", amount)
+                        print("Qty:", qty)
+                        print("Rate:", rate)
                     # check if there is already a rule computed with that code
                     previous_amount = rule.code in localdict and localdict[
                         rule.code] or 0.0

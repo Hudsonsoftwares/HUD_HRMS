@@ -13,37 +13,35 @@ class EPFEmployeeCalculator(BaseStatutoryService):
         super().__init__(env)
         self.wage_calc = wage_calc
 
-    def compute(self, payslip, localdict=None):
+    def compute(self, payslip):
         employee = payslip.employee_id
-
-        print("===== EMPLOYEE EPF DEBUG =====")
-        print("Employee:", employee.name if employee else None)
-        print("EPF Applicable:", employee.hds_in_epf_applicable if employee else None)
-
+        # Step 1: Check employee eligibility
         if not employee or not employee.hds_in_epf_applicable:
-            print("Returning 0 because employee is not EPF applicable")
             return 0.0
 
         eval_date = payslip.date_to or fields.Date.today()
 
-        contribution_wage = self.wage_calc.get_pf_contribution_wage(
-            payslip,
-            localdict=localdict
-        )
-        print("Contribution Wage:", contribution_wage)
+        # Step 2: Request contribution wage from WageCalculator
+        contribution_wage = self.wage_calc.get_pf_contribution_wage(payslip)
 
-        epf_rate = self.get_pf_parameter(
-            'EPF_RATE',
-            date=eval_date,
-            as_decimal=True
-        )
-        print("EPF Rate:", epf_rate)
+        # Step 3: Fetch EPF Rate as decimal dynamically from Rule Parameter Service
+        epf_rate = self.get_pf_parameter('EPF_RATE', date=eval_date, as_decimal=True)
 
+        # Step 4: Calculate Employee EPF (Contribution Wage * EPF Rate)
         raw_epf = contribution_wage * epf_rate
-        print("Raw EPF:", raw_epf)
 
+        # Step 5: Round using BaseStatutoryService shared rounding helper
         base_epf = self.round_statutory(raw_epf)
-        print("Rounded EPF:", base_epf)
 
-        return base_epf
-        
+        # Voluntary Provident Fund (VPF) Calculation if enabled
+        vpf_amount = 0.0
+        if employee.hds_in_vpf_type == 'percent' and employee.hds_in_vpf_percent > 0:
+            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
+            vpf_amount = self.round_statutory(actual_pf_wage * (employee.hds_in_vpf_percent / 100.0))
+        elif employee.hds_in_vpf_type == 'fixed' and employee.hds_in_vpf_amount > 0:
+            vpf_amount = float(employee.hds_in_vpf_amount)
+
+        total_employee_epf = base_epf + vpf_amount
+
+        # Step 6: Return positive amount
+        return total_employee_epf

@@ -10,7 +10,7 @@ class EPFPensionCalculator(BaseStatutoryService):
         super().__init__(env)
         self.wage_calc = wage_calc
 
-    def compute(self, payslip, localdict=None):
+    def compute(self, payslip):
         employee = payslip.employee_id
         if not employee.hds_in_epf_applicable or not employee.hds_in_eps_applicable:
             return 0.0
@@ -23,7 +23,7 @@ class EPFPensionCalculator(BaseStatutoryService):
             if age >= 58:
                 return 0.0
 
-        actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip, localdict=localdict)
+        actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
         eps_rate = self.get_pf_parameter('EPS_RATE', date=eval_date, as_decimal=True)
 
         if employee.hds_in_higher_pension or employee.hds_in_is_international_worker:

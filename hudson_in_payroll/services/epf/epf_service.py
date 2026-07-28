@@ -22,12 +22,11 @@ class EPFService:
         self.pension_calc = EPFPensionCalculator(env, self.wage_calc)
         self.employer_calc = EPFEmployerCalculator(env, self.wage_calc, self.pension_calc)
 
-    def compute_employee_epf(self, payslip, localdict=None):
-        ld = localdict if localdict is not None else self.localdict
+    def compute_employee_epf(self, payslip):
         with StatutoryAuditSession(self.env, payslip, statutory_module='epf', rule_code='EPF') as audit:
             self.validator.validate_eligibility(payslip)
-            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip, localdict=ld)
-            pf_wage = self.wage_calc.get_pf_contribution_wage(payslip, localdict=ld)
+            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
+            pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
             eval_date = payslip.date_to or self.env.context.get('date')
             epf_rate = self.env['hr.rule.parameter'].get_pf_parameter('EPF_RATE', date=eval_date, as_decimal=False)
             pf_ceiling = self.env['hr.rule.parameter'].get_pf_parameter('PF_WAGE_CEILING', date=eval_date)
@@ -41,15 +40,43 @@ class EPFService:
             audit.attach_parameter('EPF_RATE', epf_rate)
             audit.attach_parameter('PF_WAGE_CEILING', pf_ceiling)
 
-            # Delegate to EmployeeCalculator
-            amount = self.employee_calc.compute(payslip, localdict=ld)
+            amount = self.employee_calc.compute(payslip)
             audit.attach_output('employee_epf_deduction', amount)
             return amount
 
-    def compute_employer_eps(self, payslip, localdict=None):
-        ld = localdict if localdict is not None else self.localdict
+    def compute_employer_total_pf(self, payslip):
+        with StatutoryAuditSession(self.env, payslip, statutory_module='epf', rule_code='EPF_ER_TOT') as audit:
+            pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
+            eval_date = payslip.date_to or self.env.context.get('date')
+            er_rate = self.env['hr.rule.parameter'].get_pf_parameter('EMPLOYER_EPF_RATE', date=eval_date, as_decimal=False)
+
+            audit.attach_input('pf_contribution_wage', pf_wage)
+            audit.attach_parameter('EMPLOYER_EPF_RATE', er_rate)
+
+            result = self.employer_calc.compute_employer_total_pf(payslip)
+            audit.attach_output('employer_total_pf', result)
+            return result
+
+    def compute_employer_epf_share(self, payslip):
+        with StatutoryAuditSession(self.env, payslip, statutory_module='epf', rule_code='EPF_ER') as audit:
+            pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
+            eval_date = payslip.date_to or self.env.context.get('date')
+            er_rate = self.env['hr.rule.parameter'].get_pf_parameter('EMPLOYER_EPF_RATE', date=eval_date, as_decimal=False)
+
+            audit.attach_input('pf_contribution_wage', pf_wage)
+            audit.attach_parameter('EMPLOYER_EPF_RATE', er_rate)
+
+            result = self.employer_calc.compute_employer_epf_share(payslip)
+            audit.attach_output('employer_epf_share', result)
+            return result
+
+    def compute_employer_epf(self, payslip):
+        """Backward compatible alias delegating to compute_employer_epf_share."""
+        return self.compute_employer_epf_share(payslip)
+
+    def compute_employer_eps(self, payslip):
         with StatutoryAuditSession(self.env, payslip, statutory_module='epf', rule_code='EPS') as audit:
-            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip, localdict=ld)
+            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
             eval_date = payslip.date_to or self.env.context.get('date')
             eps_rate = self.env['hr.rule.parameter'].get_pf_parameter('EPS_RATE', date=eval_date, as_decimal=False)
             eps_ceiling = self.env['hr.rule.parameter'].get_pf_parameter('EPS_WAGE_CEILING', date=eval_date)
@@ -61,28 +88,13 @@ class EPFService:
             audit.attach_parameter('EPS_RATE', eps_rate)
             audit.attach_parameter('EPS_WAGE_CEILING', eps_ceiling)
 
-            result = self.pension_calc.compute(payslip, localdict=ld)
+            result = self.pension_calc.compute(payslip)
             audit.attach_output('employer_eps', result)
             return result
 
-    def compute_employer_epf(self, payslip, localdict=None):
-        ld = localdict if localdict is not None else self.localdict
-        with StatutoryAuditSession(self.env, payslip, statutory_module='epf', rule_code='EPF_ER') as audit:
-            pf_wage = self.wage_calc.get_pf_contribution_wage(payslip, localdict=ld)
-            eval_date = payslip.date_to or self.env.context.get('date')
-            er_rate = self.env['hr.rule.parameter'].get_pf_parameter('EMPLOYER_EPF_RATE', date=eval_date, as_decimal=False)
-
-            audit.attach_input('pf_contribution_wage', pf_wage)
-            audit.attach_parameter('EMPLOYER_EPF_RATE', er_rate)
-
-            result = self.employer_calc.compute_employer_epf(payslip, localdict=ld)
-            audit.attach_output('employer_epf_share', result)
-            return result
-
-    def compute_employer_edli(self, payslip, localdict=None):
-        ld = localdict if localdict is not None else self.localdict
+    def compute_employer_edli(self, payslip):
         with StatutoryAuditSession(self.env, payslip, statutory_module='epf', rule_code='EDLI') as audit:
-            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip, localdict=ld)
+            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
             eval_date = payslip.date_to or self.env.context.get('date')
             edli_rate = self.env['hr.rule.parameter'].get_pf_parameter('EDLI_RATE', date=eval_date, as_decimal=False)
             edli_ceiling = self.env['hr.rule.parameter'].get_pf_parameter('EDLI_WAGE_CEILING', date=eval_date)
@@ -91,34 +103,32 @@ class EPFService:
             audit.attach_parameter('EDLI_RATE', edli_rate)
             audit.attach_parameter('EDLI_WAGE_CEILING', edli_ceiling)
 
-            result = self.employer_calc.compute_edli(payslip, localdict=ld)
+            result = self.employer_calc.compute_edli(payslip)
             audit.attach_output('employer_edli', result)
             return result
 
-    def compute_epf_admin(self, payslip, localdict=None):
-        ld = localdict if localdict is not None else self.localdict
+    def compute_epf_admin(self, payslip):
         with StatutoryAuditSession(self.env, payslip, statutory_module='epf', rule_code='EPF_ADMIN') as audit:
-            pf_wage = self.wage_calc.get_pf_contribution_wage(payslip, localdict=ld)
+            pf_wage = self.wage_calc.get_pf_contribution_wage(payslip)
             eval_date = payslip.date_to or self.env.context.get('date')
             admin_rate = self.env['hr.rule.parameter'].get_pf_parameter('EPF_ADMIN_RATE', date=eval_date, as_decimal=False)
 
             audit.attach_input('pf_contribution_wage', pf_wage)
             audit.attach_parameter('EPF_ADMIN_RATE', admin_rate)
 
-            result = self.employer_calc.compute_epf_admin(payslip, localdict=ld)
+            result = self.employer_calc.compute_epf_admin(payslip)
             audit.attach_output('epf_admin_charges', result)
             return result
 
-    def compute_edli_admin(self, payslip, localdict=None):
-        ld = localdict if localdict is not None else self.localdict
+    def compute_edli_admin(self, payslip):
         with StatutoryAuditSession(self.env, payslip, statutory_module='epf', rule_code='EDLI_ADMIN') as audit:
-            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip, localdict=ld)
+            actual_pf_wage = self.wage_calc.get_actual_pf_wage(payslip)
             eval_date = payslip.date_to or self.env.context.get('date')
             admin_rate = self.env['hr.rule.parameter'].get_pf_parameter('EDLI_ADMIN_RATE', date=eval_date, as_decimal=False)
 
             audit.attach_input('actual_pf_wage', actual_pf_wage)
             audit.attach_parameter('EDLI_ADMIN_RATE', admin_rate)
 
-            result = self.employer_calc.compute_edli_admin(payslip, localdict=ld)
+            result = self.employer_calc.compute_edli_admin(payslip)
             audit.attach_output('edli_admin_charges', result)
             return result

@@ -10,21 +10,19 @@ class EPFWageCalculator(BaseStatutoryService):
         super().__init__(env)
         self.localdict = localdict
 
-    def get_actual_pf_wage(self, payslip, localdict=None):
+    def get_actual_pf_wage(self, payslip):
         """Delegates actual PF wage calculation to payslip domain API."""
-        ld = localdict if localdict is not None else self.localdict
-        return payslip.hds_in_get_actual_pf_wage(localdict=ld)
+        return payslip.hds_in_get_actual_pf_wage(localdict=self.localdict)
 
-    def get_pf_contribution_wage(self, payslip, localdict=None):
+    def get_pf_contribution_wage(self, payslip):
         """
         Determines the wage basis for PF contribution.
         Capped at Statutory PF Wage Ceiling (default ₹15,000) unless:
         - Employee is an International Worker (IW)
         - Contribution basis is set to 'actual_basic' or 'actual_pf_wage'
         """
-        ld = localdict if localdict is not None else self.localdict
         employee = payslip.employee_id
-        actual_pf_wage = self.get_actual_pf_wage(payslip, localdict=ld)
+        actual_pf_wage = self.get_actual_pf_wage(payslip)
 
         if employee.hds_in_is_international_worker:
             return actual_pf_wage
