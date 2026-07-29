@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Controller Template -->
+    <t t-name="hudson_attendance_timeline.AttendanceTimelineController">
+        <div class="o_attendance_timeline_container d-flex flex-column h-100" t-att-class="{ 'o_fullscreen': state.isFullscreen }">
+            <!-- Custom Top Navigation Toolbar -->
+            <div class="o_attendance_timeline_toolbar d-flex align-items-center justify-content-between p-2 border-bottom">
+                <!-- Left Toolbar: Date Navigation -->
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary" t-on-click="onPrevDay" title="Previous Day">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary font-weight-bold" t-on-click="onToday">
+                            Today
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" t-on-click="onNextDay" title="Next Day">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
+                    <h5 class="m-0 font-weight-bold text-truncate o_timeline_date_title" t-esc="state.dateTitle"/>
+                </div>
+
+                <!-- Right Toolbar: View Selector & Fullscreen -->
+                <div class="d-flex align-items-center gap-2">
+                    <!-- View Mode Selector -->
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" id="timelineViewDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <t t-if="state.viewMode === 'day'">Day</t>
+                            <t t-if="state.viewMode === 'week'">Week (Summary)</t>
+                            <t t-if="state.viewMode === 'month'">Month (Summary)</t>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="timelineViewDropdown">
+                            <li><a class="dropdown-item" t-att-class="{ 'active': state.viewMode === 'day' }" href="#" t-on-click.prevent="selectDayView">Day</a></li>
+                            <li><a class="dropdown-item" t-att-class="{ 'active': state.viewMode === 'week' }" href="#" t-on-click.prevent="selectWeekView">Week (Summary)</a></li>
+                            <li><a class="dropdown-item" t-att-class="{ 'active': state.viewMode === 'month' }" href="#" t-on-click.prevent="selectMonthView">Month (Summary)</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Fullscreen Toggle -->
+                    <button type="button" class="btn btn-outline-secondary" t-on-click="toggleFullscreen" title="Toggle Fullscreen">
+                        <i t-att-class="state.isFullscreen ? 'fa fa-compress' : 'fa fa-expand'"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- View Renderer Area -->
+            <div class="o_attendance_timeline_content flex-grow-1 overflow-hidden">
+                <t t-component="props.Renderer"
+                   employees="model.employees"
+                   currentDate="model.currentDate"
+                   viewMode="state.viewMode"
+                   onCellClick="this.onCellClick.bind(this)"
+                   onDragCreate="this.onDragCreate.bind(this)"
+                   onBarClick="this.onBarClick.bind(this)"/>
+            </div>
+        </div>
+    </t>
+
+    <!-- Renderer Template -->
+    <t t-name="hudson_attendance_timeline.AttendanceTimelineRenderer">
+        <div class="o_timeline_dual_panel d-flex h-100 position-relative">
+
+            <!-- LEFT PANEL: Employee Information (Fixed Width) -->
+            <div class="o_timeline_left_panel flex-shrink-0 border-end" t-ref="leftPanel" t-on-scroll="onScrollSync">
+                <!-- Left Header -->
+                <div class="o_timeline_left_header p-2 border-bottom font-weight-bold text-muted bg-light d-flex align-items-center">
+                    <span>Employee</span>
+                </div>
+
+                <!-- Left Rows -->
+                <div class="o_timeline_left_rows">
+                    <t t-foreach="props.employees" t-as="emp" t-key="emp.id">
+                        <div class="o_timeline_left_row p-2 border-bottom d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center overflow-hidden gap-2">
+                                <img t-att-src="emp.avatarUrl" class="o_timeline_avatar rounded-circle flex-shrink-0" alt="Avatar"/>
+                                <div class="overflow-hidden">
+                                    <div class="font-weight-bold text-truncate" t-esc="emp.name"/>
+                                    <div class="small text-muted text-truncate" t-esc="emp.workedLabel"/>
+                                </div>
+                            </div>
+                            <!-- Mini Progress Bar -->
+                            <div class="o_timeline_progress_wrapper flex-shrink-0 text-end" title="Target: 8h">
+                                <div class="progress o_timeline_progress_bar mb-1">
+                                    <div class="progress-bar bg-success"
+                                         role="progressbar"
+                                         t-att-style="'width: ' + emp.progressPercent + '%;'"
+                                         t-att-aria-valuenow="emp.progressPercent"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100"/>
+                                </div>
+                                <span class="badge bg-light text-dark small" t-esc="emp.progressPercent + '%'"/>
+                            </div>
+                        </div>
+                    </t>
+
+                    <t t-if="!props.employees.length">
+                        <div class="p-3 text-muted text-center italic">No employees found</div>
+                    </t>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: 24-Hour Timeline Grid (Horizontal Scrollable) -->
+            <div class="o_timeline_right_panel flex-grow-1 overflow-auto" t-ref="rightPanel" t-on-scroll="onScrollSync">
+                <!-- 24-Hour Header Row -->
+                <div class="o_timeline_hours_header border-bottom bg-light d-flex sticky-top">
+                    <t t-foreach="hours" t-as="h" t-key="h.hour">
+                        <div class="o_timeline_hour_cell flex-fill text-center border-start py-2 small text-muted font-weight-bold">
+                            <span t-esc="h.label"/>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- Timeline Grid Rows -->
+                <div class="o_timeline_grid_rows position-relative">
+                    <t t-foreach="props.employees" t-as="emp" t-key="emp.id">
+                        <div class="o_timeline_grid_row border-bottom position-relative"
+                             t-att-data-emp-id="emp.id"
+                             t-on-pointerdown="onRowPointerDown">
+                            
+                            <div class="o_timeline_grid_row_inner d-flex h-100 position-relative">
+                                <!-- 24 Grid Lines -->
+                                <t t-foreach="hours" t-as="h" t-key="h.hour">
+                                    <div class="o_timeline_grid_col flex-fill border-start h-100"/>
+                                </t>
+
+                                <!-- Attendance Bars Rendered Over Row -->
+                                <t t-foreach="emp.attendances" t-as="att" t-key="att.id">
+                                    <div class="o_attendance_bar position-absolute rounded shadow-sm d-flex align-items-center px-2"
+                                         t-att-data-att-id="att.id"
+                                         t-att-class="{
+                                             'is_ongoing': att.isOngoing,
+                                             'has_anomaly': att.hasAnomaly
+                                         }"
+                                         t-att-style="'left: ' + att.leftPercent + '%; width: ' + att.widthPercent + '%; min-width: 4px;'"
+                                         t-att-title="att.employeeName + '\nPeriod: ' + att.timeRangeLabel + '\nDuration: ' + att.durationLabel"
+                                         t-on-click="onBarClick">
+
+                                        <!-- Pulsing Dot for Ongoing Attendance -->
+                                        <t t-if="att.isOngoing">
+                                            <span class="o_pulsing_dot me-1" title="Currently Checked In"/>
+                                        </t>
+
+                                        <!-- Anomaly Badge Icon -->
+                                        <t t-if="att.hasAnomaly">
+                                            <i class="fa fa-exclamation-triangle text-white me-1" title="Attendance Anomaly Detected"/>
+                                        </t>
+
+                                        <!-- Attendance Time & Duration Label -->
+                                        <div class="o_attendance_bar_label text-truncate text-white font-weight-bold small">
+                                            <span class="o_bar_duration" t-esc="att.durationLabel"/>
+                                            <span class="o_bar_time text-white-50 ms-1 opacity-75 d-none d-md-inline" t-esc="'(' + att.shortRangeLabel + ')'"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

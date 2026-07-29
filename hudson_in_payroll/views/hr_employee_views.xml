@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Extend Employee Form View with Statutory Information under Payroll Tab -->
+    <!-- Extend Employee Form View with Statutory Information and CTC under Payroll Tab -->
     <record id="hds_in_view_employee_form" model="ir.ui.view">
         <field name="name">hr.employee.form.inherit.hudson.payroll</field>
         <field name="model">hr.employee</field>
-        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="inherit_id" ref="hr_payroll_community.view_employee_form"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_statutory_audits"
@@ -15,6 +15,13 @@
                     <field name="hds_in_statutory_audit_count" widget="statinfo" string="Statutory Audits"/>
                 </button>
             </xpath>
+
+            <!-- Position Employer Cost fields in Left Column (Contract Overview) right below Pay by Attendance -->
+            <xpath expr="//field[@name='pay_by_attendance']" position="after">
+                <field name="hds_in_employer_cost_monthly" widget="monetary" readonly="1"/>
+                <field name="hds_in_employer_cost_annual" string="Employer Cost to Company (Annual CTC)" widget="monetary" readonly="1"/>
+            </xpath>
+
             <xpath expr="//group[@name='breakdown_validation']" position="after">
                 <group string="Payroll Statutory Information" name="hds_in_statutory_info">
                     <group string="Employees' Provident Fund (EPF)">

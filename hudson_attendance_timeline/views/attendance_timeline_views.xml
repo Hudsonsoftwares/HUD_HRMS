@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Attendance Timeline View Definition -->
+    <record id="view_hr_attendance_timeline" model="ir.ui.view">
+        <field name="name">hr.attendance.timeline</field>
+        <field name="model">hr.attendance</field>
+        <field name="type">attendance_timeline</field>
+        <field name="arch" type="xml">
+            <attendance_timeline js_class="attendance_timeline"/>
+        </field>
+    </record>
+
+    <!-- Window Action for Attendance Timeline View -->
+    <record id="hr_attendance_action_timeline" model="ir.actions.act_window">
+        <field name="name">Attendance Timeline</field>
+        <field name="res_model">hr.attendance</field>
+        <field name="view_mode">attendance_timeline,list,form</field>
+        <field name="view_id" ref="view_hr_attendance_timeline"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No attendance records found for the selected period
+            </p>
+        </field>
+    </record>
+
+    <record id="hr_attendance_action_timeline_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">attendance_timeline</field>
+        <field name="view_id" ref="view_hr_attendance_timeline"/>
+        <field name="act_window_id" ref="hr_attendance_action_timeline"/>
+    </record>
+</odoo>

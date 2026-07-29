@@ -8,6 +8,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='appears_on_payslip']" position="after">
                 <field name="hds_in_include_in_pf_wage"/>
+                <field name="hds_in_contributes_to_employer_cost"/>
             </xpath>
         </field>
     </record>
@@ -20,6 +21,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='code']" position="after">
                 <field name="hds_in_include_in_pf_wage"/>
+                <field name="hds_in_contributes_to_employer_cost"/>
             </xpath>
         </field>
     </record>

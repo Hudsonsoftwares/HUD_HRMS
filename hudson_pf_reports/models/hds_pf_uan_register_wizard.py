@@ -38,7 +38,7 @@ class HdsPfUanRegisterWizard(models.TransientModel):
         for emp in employees:
             j_date = getattr(emp, 'joining_date', False)
             if not j_date:
-                contracts = self.env['hr.version'].search([('employee_id', '=', emp.id)], order='date_start asc', limit=1)
+                contracts = self.env['hr.version'].search([('employee_id', '=', emp.id)], order='id asc', limit=1)
                 if contracts:
                     j_date = contracts.date_start
 

@@ -101,7 +101,36 @@ class HrEmployee(models.Model):
         ('other', 'Other'),
     ], string="Reason for Exit ESIC")
 
+    hds_in_employer_cost_monthly = fields.Monetary(
+        string="Employer Cost (Monthly)",
+        compute='_compute_hds_in_employer_cost',
+        currency_field='currency_id',
+        help="Monthly Employer Cost to Company (CTC)."
+    )
+    hds_in_employer_cost_annual = fields.Monetary(
+        string="Employer Cost to Company (CTC)",
+        compute='_compute_hds_in_employer_cost',
+        currency_field='currency_id',
+        help="Annual Employer Cost to Company (CTC)."
+    )
+
+    def _compute_hds_in_employer_cost(self):
+        for emp in self:
+            contract = self.env['hr.version'].search([('employee_id', '=', emp.id)], order='id desc', limit=1)
+            if contract:
+                if (not contract.hds_in_employer_cost_monthly or contract.hds_in_employer_cost_monthly == 0.0) and (contract.wage or 0.0) > 0:
+                    contract._compute_employer_cost()
+                emp.hds_in_employer_cost_monthly = contract.hds_in_employer_cost_monthly
+                emp.hds_in_employer_cost_annual = contract.hds_in_employer_cost_annual
+            else:
+                emp.hds_in_employer_cost_monthly = 0.0
+                emp.hds_in_employer_cost_annual = 0.0
+
+
+
+
     hds_in_statutory_audit_count = fields.Integer(
+
         string="Statutory Audits",
         compute='_compute_hds_in_statutory_audit_count'
     )

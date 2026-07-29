@@ -1,0 +1,228 @@
+/* Attendance Timeline View Styles */
+
+.o_attendance_timeline_container {
+    background-color: var(--o-view-background, #ffffff);
+    color: var(--o-main-text-color, #212529);
+
+    &.o_fullscreen {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        z-index: 9999 !important;
+        background-color: var(--o-view-background, #ffffff);
+    }
+}
+
+.o_attendance_timeline_toolbar {
+    background-color: var(--o-view-background, #ffffff);
+    border-color: var(--o-border-color, #dee2e6) !important;
+
+    .o_timeline_date_title {
+        min-width: 220px;
+        color: var(--o-main-text-color, #212529);
+    }
+}
+
+.o_timeline_dual_panel {
+    height: 100%;
+
+    /* LEFT PANEL */
+    .o_timeline_left_panel {
+        width: 280px;
+        background-color: var(--o-view-background, #ffffff);
+        border-color: var(--o-border-color, #dee2e6) !important;
+
+        .o_timeline_left_header {
+            height: 42px;
+            background-color: var(--o-view-background, #f8f9fa) !important;
+            border-color: var(--o-border-color, #dee2e6) !important;
+        }
+
+        .o_timeline_left_row {
+            height: 64px;
+            border-color: var(--o-border-color, #dee2e6) !important;
+
+            .o_timeline_avatar {
+                width: 38px;
+                height: 38px;
+                object-fit: cover;
+            }
+
+            .o_timeline_progress_wrapper {
+                width: 75px;
+
+                .o_timeline_progress_bar {
+                    height: 6px;
+                    background-color: var(--o-border-color, #e9ecef);
+                    border-radius: 3px;
+                }
+            }
+        }
+    }
+
+    /* RIGHT PANEL */
+    .o_timeline_right_panel {
+        background-color: var(--o-view-background, #ffffff);
+
+        .o_timeline_hours_header {
+            height: 42px;
+            min-width: 1400px;
+            background-color: var(--o-view-background, #f8f9fa) !important;
+            border-color: var(--o-border-color, #dee2e6) !important;
+
+            .o_timeline_hour_cell {
+                border-color: var(--o-border-color, #dee2e6) !important;
+            }
+        }
+
+        .o_timeline_grid_rows {
+            min-width: 1400px;
+
+            .o_timeline_grid_row {
+                height: 64px;
+                border-color: var(--o-border-color, #dee2e6) !important;
+                cursor: crosshair;
+
+                .o_timeline_grid_col {
+                    border-color: var(--o-border-color, #f0f0f0) !important;
+                }
+
+                &:hover {
+                    background-color: rgba(0, 0, 0, 0.015);
+                }
+            }
+        }
+    }
+}
+
+/* ATTENDANCE BARS */
+.o_attendance_bar {
+    top: 10px;
+    height: 44px;
+    z-index: 5;
+    cursor: pointer;
+    background: linear-gradient(135deg, #28a745, #218838);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+    overflow: hidden;
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+        z-index: 10;
+    }
+
+    /* ONGOING ATTENDANCE (check_out == False) */
+    &.is_ongoing {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border: 1px dashed rgba(255, 255, 255, 0.8);
+    }
+
+    /* ATTENDANCE ANOMALY */
+    &.has_anomaly {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .o_attendance_bar_label {
+        font-size: 0.825rem;
+        line-height: 1.2;
+    }
+}
+
+/* PULSING ACTIVE INDICATOR */
+.o_pulsing_dot {
+    width: 8px;
+    height: 8px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    animation: o_pulse_dot_anim 1.5s infinite;
+}
+
+@keyframes o_pulse_dot_anim {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+/* DRAG SELECTION OVERLAY */
+#o_timeline_drag_overlay, .o_timeline_drag_overlay {
+    background-color: rgba(13, 110, 253, 0.25);
+    border: 2px dashed #0d6efd;
+    pointer-events: none;
+    z-index: 100;
+    border-radius: 4px;
+}
+
+/* DARK MODE OVERRIDES (hudson_theme_toggle compatibility) */
+html.o_dark_mode {
+    .o_attendance_timeline_container {
+        background-color: #18181b !important;
+        color: #f4f4f5 !important;
+    }
+
+    .o_attendance_timeline_toolbar {
+        background-color: #18181b !important;
+        border-color: #27272a !important;
+
+        .o_timeline_date_title {
+            color: #f4f4f5 !important;
+        }
+    }
+
+    .o_timeline_left_panel {
+        background-color: #18181b !important;
+        border-color: #27272a !important;
+
+        .o_timeline_left_header {
+            background-color: #121214 !important;
+            border-color: #27272a !important;
+            color: #a1a1aa !important;
+        }
+
+        .o_timeline_left_row {
+            border-color: #27272a !important;
+        }
+    }
+
+    .o_timeline_right_panel {
+        background-color: #18181b !important;
+
+        .o_timeline_hours_header {
+            background-color: #121214 !important;
+            border-color: #27272a !important;
+
+            .o_timeline_hour_cell {
+                border-color: #27272a !important;
+                color: #a1a1aa !important;
+            }
+        }
+
+        .o_timeline_grid_rows {
+            .o_timeline_grid_row {
+                border-color: #27272a !important;
+
+                .o_timeline_grid_col {
+                    border-color: #27272a !important;
+                }
+
+                &:hover {
+                    background-color: rgba(255, 255, 255, 0.03);
+                }
+            }
+        }
+    }
+}

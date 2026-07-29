@@ -64,6 +64,7 @@
             <field name="amount_select">code</field>
             <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employer_total_pf()]]></field>
             <field name="appears_on_payslip" eval="False"/>
+            <field name="hds_in_contributes_to_employer_cost" eval="True"/>
             <field name="active" eval="True"/>
         </record>
 
@@ -100,6 +101,7 @@
             <field name="amount_select">code</field>
             <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_employer_edli()]]></field>
             <field name="appears_on_payslip" eval="False"/>
+            <field name="hds_in_contributes_to_employer_cost" eval="True"/>
             <field name="active" eval="True"/>
         </record>
 
@@ -112,6 +114,7 @@
             <field name="amount_select">code</field>
             <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_epf_admin()]]></field>
             <field name="appears_on_payslip" eval="False"/>
+            <field name="hds_in_contributes_to_employer_cost" eval="True"/>
             <field name="active" eval="True"/>
         </record>
 
@@ -124,6 +127,7 @@
             <field name="amount_select">code</field>
             <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_edli_admin()]]></field>
             <field name="appears_on_payslip" eval="False"/>
+            <field name="hds_in_contributes_to_employer_cost" eval="True"/>
             <field name="active" eval="True"/>
         </record>
 

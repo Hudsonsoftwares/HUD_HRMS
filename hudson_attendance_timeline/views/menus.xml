@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu item under Attendances management -->
+    <menuitem id="menu_hr_attendance_timeline"
+              name="Attendance Timeline"
+              parent="hr_attendance.menu_hr_attendance_root"
+              action="hr_attendance_action_timeline"
+              sequence="15"/>
+</odoo>
