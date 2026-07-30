@@ -43,6 +43,7 @@ class HdsInPayrollAudit(models.Model):
         ('gratuity', 'Gratuity'),
         ('leave_encashment', 'Leave Encashment'),
         ('tds', 'Income Tax (TDS)'),
+        ('revision', 'Salary Revision'),
     ], string="Statutory Module", required=True, index=True, readonly=True)
 
     calculation_type = fields.Char(

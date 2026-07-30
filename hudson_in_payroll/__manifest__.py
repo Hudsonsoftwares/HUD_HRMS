@@ -23,6 +23,8 @@
         'views/hr_contract_views.xml',
         'views/hr_payslip_views.xml',
         'views/hds_in_payroll_audit_views.xml',
+        'wizard/hds_in_salary_revision_wizard_views.xml',
+        'views/hds_in_salary_revision_views.xml',
     ],
     'installable': True,
     'application': False,

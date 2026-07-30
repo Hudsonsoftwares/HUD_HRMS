@@ -133,13 +133,17 @@ class HrEmployee(models.Model):
         string="Employer Cost (Monthly)",
         compute='_compute_hds_in_employer_cost',
         currency_field='currency_id',
-        help="Monthly Employer Cost to Company (CTC)."
+        store=True,
+        readonly=True,
+        help="Monthly Employer Cost to Company (CTC) synced directly from active contract."
     )
     hds_in_employer_cost_annual = fields.Monetary(
         string="Employer Cost (Annual)",
         compute='_compute_hds_in_employer_cost',
         currency_field='currency_id',
-        help="Annual Employer Cost to Company (CTC)."
+        store=True,
+        readonly=True,
+        help="Annual Employer Cost to Company (CTC) synced directly from active contract."
     )
 
     hds_in_statutory_audit_count = fields.Integer(
@@ -179,10 +183,8 @@ class HrEmployee(models.Model):
             eval_date = fields.Date.today()
 
         if gross_wage is None:
-            contract = self.env['hr.version'].search([
-                ('employee_id', '=', self.id),
-                ('state', 'in', ['draft', 'open'])
-            ], limit=1, order='date_start desc')
+            contracts = self.env['hr.version'].search([('employee_id', '=', self.id)])
+            contract = contracts.sorted(lambda c: c.date_start or fields.Date.today(), reverse=True)[0] if contracts else False
             gross_wage = contract.wage if contract else 0.0
 
         if self.hds_in_is_pwd:
@@ -218,13 +220,11 @@ class HrEmployee(models.Model):
                 if duplicate:
                     raise ValidationError(_("ESIC IP Number '%s' is already registered for employee '%s'. Duplicate IP numbers are not allowed.") % (ip_clean, duplicate.name))
 
-    @api.depends('hds_in_epf_applicable', 'hds_in_eps_applicable')
     def _compute_hds_in_employer_cost(self):
         for emp in self:
-            contract = emp.contract_id if hasattr(emp, 'contract_id') else False
-            wage = contract.wage if contract else 0.0
-            emp_epf_rate = self.env['hr.rule.parameter'].get_pf_parameter('EMPLOYER_EPF_RATE', as_decimal=True) if emp.hds_in_epf_applicable else 0.0
-            monthly_cost = wage + (wage * emp_epf_rate)
+            contracts = self.env['hr.version'].search([('employee_id', '=', emp.id)])
+            active_contract = contracts.sorted(lambda c: c.date_start or fields.Date.today(), reverse=True)[0] if contracts else False
+            monthly_cost = active_contract.hds_in_employer_cost_monthly if active_contract else 0.0
             emp.hds_in_employer_cost_monthly = monthly_cost
             emp.hds_in_employer_cost_annual = monthly_cost * 12.0
 

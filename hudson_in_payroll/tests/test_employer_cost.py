@@ -49,3 +49,22 @@ class TestEmployerCost(TransactionCase):
         self.assertGreater(self.contract.hds_in_employer_cost_monthly, 15000.0)
         self.assertEqual(self.contract.hds_in_employer_cost_annual, self.contract.hds_in_employer_cost_monthly * 12.0)
         self.assertEqual(self.employee.hds_in_employer_cost_annual, self.contract.hds_in_employer_cost_annual)
+
+    def test_03_contract_template_load_employer_cost_sync(self):
+        """Validates that loading a contract template populates non-zero Employer Cost figures on contract and syncs to employee."""
+        tmpl = self.Contract.create({
+            'name': 'Standard Software Engineer Template',
+            'wage': 20000.0,
+            'struct_id': self.structure.id,
+        })
+
+        new_contract = self.Contract.create({
+            'name': 'Contract - New Employee',
+            'employee_id': self.employee.id,
+            'contract_template_id': tmpl.id,
+        })
+        new_contract._onchange_contract_template_id()
+
+        self.assertGreater(new_contract.hds_in_employer_cost_monthly, 20000.0)
+        self.assertEqual(self.employee.hds_in_employer_cost_monthly, new_contract.hds_in_employer_cost_monthly)
+        self.assertEqual(self.employee.hds_in_employer_cost_annual, new_contract.hds_in_employer_cost_annual)

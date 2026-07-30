@@ -74,19 +74,28 @@ class HrVersion(models.Model):
             monthly_ctc = wage + employer_contrib_monthly
             contract.hds_in_employer_cost_monthly = monthly_ctc
             contract.hds_in_employer_cost_annual = monthly_ctc * 12.0
+            if contract.employee_id:
+                contract.employee_id._compute_hds_in_employer_cost()
+
+    @api.onchange('contract_template_id')
+    def _onchange_contract_template_id(self):
+        super()._onchange_contract_template_id()
+        self._compute_employer_cost()
 
     @api.model_create_multi
     def create(self, vals_list):
         contracts = super().create(vals_list)
         for contract in contracts:
+            contract._compute_employer_cost()
             if contract.employee_id and contract.wage:
                 contract._sync_employee_esic_default()
         return contracts
 
     def write(self, vals):
         res = super().write(vals)
-        if 'wage' in vals or 'employee_id' in vals:
+        if any(f in vals for f in ('wage', 'employee_id', 'struct_id', 'contract_template_id', 'basic_salary', 'hra', 'da')):
             for contract in self:
+                contract._compute_employer_cost()
                 if contract.employee_id and contract.wage:
                     contract._sync_employee_esic_default()
         return res

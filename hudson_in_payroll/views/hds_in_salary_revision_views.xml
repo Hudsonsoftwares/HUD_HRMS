@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Salary Revision List View -->
+    <record id="hds_in_salary_revision_view_list" model="ir.ui.view">
+        <field name="name">hds.in.salary.revision.view.list</field>
+        <field name="model">hds.in.salary.revision</field>
+        <field name="arch" type="xml">
+            <list string="Salary Revisions" create="false" edit="false" delete="false">
+                <field name="name"/>
+                <field name="effective_date"/>
+                <field name="employee_id"/>
+                <field name="contract_id"/>
+                <field name="revision_type" widget="badge"/>
+                <field name="old_wage" widget="monetary"/>
+                <field name="new_wage" widget="monetary"/>
+                <field name="wage_difference" widget="monetary" class="fw-bold"/>
+                <field name="old_employer_cost_monthly" widget="monetary"/>
+                <field name="new_employer_cost_monthly" widget="monetary"/>
+                <field name="state" widget="badge" decoration-success="state == 'approved'" decoration-muted="state == 'draft'" decoration-danger="state == 'cancelled'"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Salary Revision Form View -->
+    <record id="hds_in_salary_revision_view_form" model="ir.ui.view">
+        <field name="name">hds.in.salary.revision.view.form</field>
+        <field name="model">hds.in.salary.revision</field>
+        <field name="arch" type="xml">
+            <form string="Salary Revision History" create="false" edit="false" delete="false">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                        <h2>
+                            <field name="employee_id" readonly="1"/>
+                        </h2>
+                    </div>
+
+                    <group>
+                        <group string="Revision Info">
+                            <field name="effective_date" readonly="1"/>
+                            <field name="revision_type" readonly="1"/>
+                            <field name="contract_id" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                        <group string="Revision Parameters">
+                            <field name="revision_basis" readonly="1"/>
+                            <field name="capped_wage_amount" invisible="revision_basis != 'capped_wage'" readonly="1"/>
+                            <field name="computation_type" readonly="1"/>
+                            <field name="increase_percentage" invisible="computation_type != 'percentage'" readonly="1"/>
+                            <field name="increase_amount" invisible="computation_type != 'fixed_amount'" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Salary &amp; CTC Impact">
+                            <group>
+                                <group string="Gross Salary Breakdown">
+                                    <field name="old_wage" widget="monetary" readonly="1"/>
+                                    <field name="new_wage" widget="monetary" readonly="1"/>
+                                    <field name="wage_difference" widget="monetary" readonly="1"/>
+                                </group>
+                                <group string="Employer Cost to Company (CTC)">
+                                    <field name="old_employer_cost_monthly" widget="monetary" readonly="1"/>
+                                    <field name="new_employer_cost_monthly" widget="monetary" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Statutory Impact">
+                            <group>
+                                <group string="Provident Fund (EPF &amp; EPS)">
+                                    <field name="old_epf_wage" widget="monetary" readonly="1"/>
+                                    <field name="new_epf_wage" widget="monetary" readonly="1"/>
+                                    <field name="old_employee_epf" widget="monetary" readonly="1"/>
+                                    <field name="new_employee_epf" widget="monetary" readonly="1"/>
+                                    <field name="old_employer_pf" widget="monetary" readonly="1"/>
+                                    <field name="new_employer_pf" widget="monetary" readonly="1"/>
+                                </group>
+                                <group string="ESIC &amp; Statutory Taxes">
+                                    <field name="old_esic_applicable" readonly="1"/>
+                                    <field name="new_esic_applicable" readonly="1"/>
+                                    <field name="old_employee_esic" widget="monetary" readonly="1"/>
+                                    <field name="new_employee_esic" widget="monetary" readonly="1"/>
+                                    <field name="old_employer_esic" widget="monetary" readonly="1"/>
+                                    <field name="new_employer_esic" widget="monetary" readonly="1"/>
+                                    <field name="old_pt_amount" widget="monetary" readonly="1"/>
+                                    <field name="new_pt_amount" widget="monetary" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Reason &amp; Audit Trail">
+                            <group>
+                                <field name="reason" readonly="1"/>
+                                <field name="notes" readonly="1"/>
+                                <field name="created_by_id" readonly="1"/>
+                                <field name="create_date" string="Created On" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action Window for Salary Revision History -->
+    <record id="action_hds_in_salary_revision_history" model="ir.actions.act_window">
+        <field name="name">Salary Revision History</field>
+        <field name="res_model">hds.in.salary.revision</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No Salary Revisions Found!
+            </p>
+            <p>
+                Salary revisions executed from the Employee Action menu will be stored here as immutable audit history.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item for Salary Revisions History -->
+    <menuitem id="menu_hds_in_salary_revision_history"
+              name="Salary Revisions"
+              parent="hr_payroll_community.menu_hr_payroll_community_root"
+              action="action_hds_in_salary_revision_history"
+              sequence="85"/>
+</odoo>
