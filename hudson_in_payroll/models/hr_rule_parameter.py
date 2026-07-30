@@ -27,6 +27,7 @@ class HrRuleParameter(models.Model):
         ('rate', 'Statutory Rate / Percentage'),
         ('ceiling', 'Wage Ceiling / Limit'),
         ('admin', 'Admin Charge Rate'),
+        ('threshold', 'Threshold / Exemption Limit'),
         ('other', 'Other Parameter'),
     ], string="Category", default='rate', required=True)
     description = fields.Text(
@@ -94,15 +95,9 @@ class HrRuleParameter(models.Model):
     @api.model
     def get_parameter(self, code, date=None, as_decimal=False):
         """
-        Generic statutory parameter lookup for all NEW statutory modules
-        (ESIC, PT, LWF, Gratuity, Bonus, TDS, etc.), introduced going
-        forward. Unlike get_pf_parameter(), this method does NOT accept
-        short mapping keys — callers must always pass the actual,
-        real, hds_in_-prefixed parameter code stored on the
-        hr.rule.parameter record. No mapping dictionary exists or
-        should ever be added for this method — that is the point of
-        it: new statutory codes are self-descriptive and require no
-        translation layer.
+        Generic statutory parameter lookup for all statutory modules
+        (ESIC, PT, LWF, Gratuity, Bonus, TDS, etc.). Callers pass the actual
+        hds_in_-prefixed parameter code stored on the hr.rule.parameter record.
         """
         param = self.search([('code', '=', code)], limit=1)
         if not param:
@@ -138,9 +133,5 @@ class HrRuleParameterValue(models.Model):
     parameter_value = fields.Char(string="Value", required=True)
     description = fields.Text(
         string="Notification / Notes",
-        help="Government notification number, gazette reference, or reason for update."
+        help="Government Notification Number or Statutory Gazette reference."
     )
-
-    _sql_constraints = [
-        ('unique_param_date', 'unique(parameter_id, date_from)', 'A parameter version with this effective date already exists for this parameter!')
-    ]

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Kanban View for Statutory Report Hub Tiles -->
+    <record id="hds_statutory_report_tile_view_kanban" model="ir.ui.view">
+        <field name="name">hds.statutory.report.tile.kanban</field>
+        <field name="model">hds.statutory.report.tile</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="section" class="o_statutory_reports_kanban" create="false" edit="false">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="icon"/>
+                <field name="section"/>
+                <field name="featured"/>
+                <field name="action_id"/>
+                <templates>
+                    <t t-name="card">
+                        <a type="object" name="action_open_report"
+                           t-attf-class="oe_kanban_global_click text-decoration-none d-block p-3 rounded position-relative transition-all #{record.featured.raw_value ? 'border border-2 border-primary bg-primary-subtle shadow-sm' : 'border bg-body shadow-sm'}">
+                            
+                            <!-- Featured / Mandatory Ribbon Badge -->
+                            <t t-if="record.featured.raw_value">
+                                <span class="badge text-bg-primary position-absolute top-0 end-0 m-2 shadow-xs" style="font-size: 0.7rem;">
+                                    <i class="fa fa-star me-1" aria-label="Mandatory" role="img" title="Mandatory"/>Mandatory Filing
+                                </span>
+                            </t>
+
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="o_statutory_report_icon flex-shrink-0 mt-1">
+                                    <i t-attf-class="fa #{record.icon.value} fa-2x #{record.featured.raw_value ? 'text-primary' : 'text-secondary'}"
+                                       aria-label="Report Icon" role="img" title="Report Icon"/>
+                                </div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <h5 class="fw-bold mb-1 text-body-emphasis pe-4 text-truncate" style="font-size: 1rem;">
+                                        <t t-esc="record.name.value"/>
+                                    </h5>
+                                    <p class="text-muted small mb-0 text-wrap line-clamp-2" style="font-size: 0.825rem; line-height: 1.35;">
+                                        <t t-esc="record.description.value"/>
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- List View for Technical Maintenance -->
+    <record id="hds_statutory_report_tile_view_list" model="ir.ui.view">
+        <field name="name">hds.statutory.report.tile.list</field>
+        <field name="model">hds.statutory.report.tile</field>
+        <field name="arch" type="xml">
+            <list string="Statutory Report Tiles">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="section"/>
+                <field name="featured"/>
+                <field name="icon"/>
+                <field name="action_id"/>
+                <field name="country_code"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Window Action for Statutory Reports Hub -->
+    <record id="action_hds_statutory_report_hub" model="ir.actions.act_window">
+        <field name="name">PF Statutory Reports Hub</field>
+        <field name="res_model">hds.statutory.report.tile</field>
+        <field name="view_mode">kanban,list</field>
+        <field name="domain">[('country_code', '=', 'IN')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                PF Statutory Reports Hub
+            </p>
+            <p>
+                Click any report tile to launch its generator wizard.
+            </p>
+        </field>
+    </record>
+
+</odoo>

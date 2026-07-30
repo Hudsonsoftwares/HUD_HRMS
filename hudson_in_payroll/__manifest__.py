@@ -14,6 +14,7 @@
         'data/hr_salary_rule_category.xml',
         'data/hr_rule_parameters.xml',
         'data/hr_salary_rule_pf.xml',
+        'data/hr_salary_rule_esic.xml',
         'data/hr_salary_rules.xml',
         'views/res_config_settings_views.xml',
         'views/hr_rule_parameter_views.xml',

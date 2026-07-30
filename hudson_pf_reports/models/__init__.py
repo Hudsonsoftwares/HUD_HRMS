@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from . import hds_statutory_report_tile
 from . import pf_report_wizard_base
 from . import hds_pf_ecr_wizard
 from . import hds_pf_register_wizard

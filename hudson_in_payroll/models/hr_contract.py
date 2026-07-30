@@ -75,6 +75,47 @@ class HrVersion(models.Model):
             contract.hds_in_employer_cost_monthly = monthly_ctc
             contract.hds_in_employer_cost_annual = monthly_ctc * 12.0
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        contracts = super().create(vals_list)
+        for contract in contracts:
+            if contract.employee_id and contract.wage:
+                contract._sync_employee_esic_default()
+        return contracts
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'wage' in vals or 'employee_id' in vals:
+            for contract in self:
+                if contract.employee_id and contract.wage:
+                    contract._sync_employee_esic_default()
+        return res
+
+    @api.onchange('wage', 'employee_id')
+    def _onchange_wage_sync_esic(self):
+        for contract in self:
+            if contract.employee_id and contract.wage:
+                default_esic = contract.employee_id._evaluate_default_esic_applicable(
+                    gross_wage=contract.wage,
+                    eval_date=contract.date_start or fields.Date.today()
+                )
+                contract.employee_id.hds_in_esic_applicable = default_esic
+
+    def _sync_employee_esic_default(self):
+        """
+        Updates default ESIC applicability on employee when contract wage changes,
+        while maintaining manual override capability.
+        """
+        self.ensure_one()
+        employee = self.employee_id
+        if not employee:
+            return
+        default_esic = employee._evaluate_default_esic_applicable(
+            gross_wage=self.wage,
+            eval_date=self.date_start or fields.Date.today()
+        )
+        employee.write({'hds_in_esic_applicable': default_esic})
+
     def _estimate_statutory_rule_amount(self, contract, rule):
         code_text = rule.amount_python_compute or ''
         wage = contract.wage or 0.0

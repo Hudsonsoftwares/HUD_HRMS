@@ -23,35 +23,83 @@
             </xpath>
 
             <xpath expr="//group[@name='breakdown_validation']" position="after">
-                <group string="Payroll Statutory Information" name="hds_in_statutory_info">
-                    <group string="Employees' Provident Fund (EPF)">
-                        <field name="hds_in_epf_applicable"/>
-                        <field name="hds_in_uan"/>
-                        <field name="hds_in_pf_member_id"/>
-                        <field name="hds_in_pf_joining_date"/>
-                        <field name="hds_in_existing_epf_member"/>
-                        <field name="hds_in_is_international_worker"/>
-                        <field name="hds_in_vpf_type"/>
-                        <field name="hds_in_vpf_percent" invisible="hds_in_vpf_type != 'percent'"/>
-                        <field name="hds_in_vpf_amount" invisible="hds_in_vpf_type != 'fixed'"/>
+                <group string="Payroll Statutory Information" name="hds_in_statutory_info" col="2">
+                    
+                    <!-- ======================================================= -->
+                    <!-- 1. EMPLOYEES' PROVIDENT FUND (PF & EPS) MODULE -->
+                    <!-- ======================================================= -->
+                    <group name="group_pf_section" colspan="2" col="2">
+                        <div class="o_horizontal_separator d-flex justify-content-between align-items-center mb-2" colspan="2">
+                            <span>Employees' Provident Fund (PF)</span>
+                            <field name="hds_in_epf_applicable" nolabel="1"/>
+                        </div>
+
+                        <!-- PF Details Container (Full Width, 2-Column Grid) -->
+                        <group name="pf_details_container" invisible="not hds_in_epf_applicable" colspan="2" col="2">
+                            <!-- Subsection 1: Registration -->
+                            <separator string="Registration" colspan="2"/>
+                            <field name="hds_in_uan" placeholder="e.g. 100123456789"/>
+                            <field name="hds_in_pf_member_id" placeholder="e.g. MH/BAN/0012345/000/0000123"/>
+                            <field name="hds_in_pf_joining_date"/>
+
+                            <!-- Subsection 2: Membership -->
+                            <separator string="Membership" colspan="2"/>
+                            <field name="hds_in_existing_epf_member"/>
+                            <field name="hds_in_is_international_worker"/>
+                            <field name="hds_in_eps_applicable"/>
+                            <field name="hds_in_existing_eps_member" invisible="not hds_in_eps_applicable"/>
+                            <field name="hds_in_higher_pension" invisible="not hds_in_eps_applicable"/>
+
+                            <!-- Subsection 3: Contribution -->
+                            <separator string="Contribution" colspan="2"/>
+                            <field name="hds_in_pf_contribution_basis"/>
+                            <field name="hds_in_vpf_type"/>
+                            <field name="hds_in_vpf_percent" invisible="hds_in_vpf_type != 'percent'"/>
+                            <field name="hds_in_vpf_amount" invisible="hds_in_vpf_type != 'fixed'"/>
+                        </group>
                     </group>
-                    <group string="Employees' Pension Scheme (EPS)">
-                        <field name="hds_in_eps_applicable"/>
-                        <field name="hds_in_existing_eps_member"/>
-                        <field name="hds_in_higher_pension"/>
-                        <field name="hds_in_pf_contribution_basis"/>
+
+                    <!-- ======================================================= -->
+                    <!-- 2. EMPLOYEES' STATE INSURANCE (ESIC) MODULE -->
+                    <!-- ======================================================= -->
+                    <group name="group_esic_section" colspan="2" col="2">
+                        <div class="o_horizontal_separator d-flex justify-content-between align-items-center mb-2" colspan="2">
+                            <span>Employees' State Insurance (ESIC)</span>
+                            <field name="hds_in_esic_applicable" nolabel="1"/>
+                        </div>
+
+                        <!-- ESIC Details Container (Full Width, 2-Column Grid) -->
+                        <group name="esic_details_container" invisible="not hds_in_esic_applicable" colspan="2" col="2">
+                            <!-- Subsection 1: Registration -->
+                            <separator string="Registration" colspan="2"/>
+                            <field name="hds_in_esic_ip_number" placeholder="e.g. 12345678901234567"/>
+                            <field name="hds_in_esic_joining_date"/>
+                            <field name="hds_in_esic_exit_date"/>
+                            <field name="hds_in_esic_exit_reason" invisible="not hds_in_esic_exit_date"/>
+
+                            <!-- Subsection 2: Coverage & Eligibility -->
+                            <separator string="Coverage &amp; Eligibility" colspan="2"/>
+                            <field name="hds_in_esic_ip_status" widget="badge"
+                                   decoration-success="hds_in_esic_ip_status == 'active'"
+                                   decoration-warning="hds_in_esic_ip_status == 'exempt'"
+                                   decoration-danger="hds_in_esic_ip_status == 'resigned'"
+                                   decoration-muted="hds_in_esic_ip_status == 'disabled'"/>
+                            <field name="hds_in_esic_contribution_basis" readonly="1"/>
+                            <field name="hds_in_esic_contribution_period" readonly="1"/>
+
+                            <!-- Subsection 3: Medical Details -->
+                            <separator string="Medical Details" colspan="2"/>
+                            <field name="hds_in_esic_dispensary" placeholder="Select or enter ESIC Dispensary"/>
+                        </group>
                     </group>
-                    <group string="Employees' State Insurance (ESIC)">
-                        <field name="hds_in_esic_applicable"/>
-                        <field name="hds_in_esic_ip_number"/>
-                        <field name="hds_in_esic_joining_date"/>
-                        <field name="hds_in_esic_exit_date"/>
-                        <field name="hds_in_esic_ip_status"/>
-                        <field name="hds_in_esic_contribution_basis" readonly="1"/>
-                        <field name="hds_in_esic_contribution_period"/>
-                        <field name="hds_in_esic_dispensary"/>
-                        <field name="hds_in_esic_exit_reason"/>
-                    </group>
+
+                </group>
+            </xpath>
+
+            <!-- Relocate PWD field to Personal Information tab -->
+            <xpath expr="//page[@name='personal_information']/group" position="inside">
+                <group string="Disability &amp; Special Status" name="group_disability_status">
+                    <field name="hds_in_is_pwd"/>
                 </group>
             </xpath>
         </field>

@@ -1,4 +1,6 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hds_statutory_report_tile_user,hds.statutory.report.tile.user,model_hds_statutory_report_tile,hr_payroll_community.group_hr_payroll_community_user,1,0,0,0
+access_hds_statutory_report_tile_manager,hds.statutory.report.tile.manager,model_hds_statutory_report_tile,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
 access_hds_pf_ecr_wizard_user,hds.pf.ecr.wizard.user,model_hds_pf_ecr_wizard,hr_payroll_community.group_hr_payroll_community_user,1,1,1,1
 access_hds_pf_register_wizard_user,hds.pf.register.wizard.user,model_hds_pf_register_wizard,hr_payroll_community.group_hr_payroll_community_user,1,1,1,1
 access_hds_pf_monthly_summary_wizard_user,hds.pf.monthly.summary.wizard.user,model_hds_pf_monthly_summary_wizard,hr_payroll_community.group_hr_payroll_community_user,1,1,1,1

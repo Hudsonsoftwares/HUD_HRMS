@@ -39,6 +39,8 @@ Comprehensive EPFO Indian Provident Fund reporting suite for Hudson HRMS:
         'views/hds_pf_ecr_wizard_views.xml',
         'views/hds_pf_register_wizard_views.xml',
         'views/hds_pf_reports_views.xml',
+        'views/hds_statutory_report_tile_views.xml',
+        'data/hds_statutory_report_tiles.xml',
         'views/pf_report_menu_views.xml',
     ],
     'installable': True,

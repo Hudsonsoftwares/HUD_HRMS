@@ -1,61 +1,69 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+import re
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
 
+    # EPF / UAN Information
     hds_in_epf_applicable = fields.Boolean(
         string="EPF Applicable",
         default=True,
-        help="Check if Employee Provident Fund applies to this employee."
+        help="Enable EPF statutory deductions for this employee."
     )
     hds_in_uan = fields.Char(
-        string="UAN",
-        help="Universal Account Number (12 digits) issued by EPFO."
+        string="UAN (Universal Account Number)",
+        help="12-digit EPFO Universal Account Number."
     )
     hds_in_pf_member_id = fields.Char(
-        string="PF Member ID",
-        help="Member ID / Member Account Number (e.g. MH/BAN/0012345/000/0000123)."
+        string="PF Member ID / Member Code",
+        help="Establishment Member ID (e.g. MH/BAN/0012345/000/0000123)."
     )
     hds_in_pf_joining_date = fields.Date(
-        string="PF Joining Date",
-        help="Date when employee joined Provident Fund."
+        string="Date of Joining PF",
+        help="Date employee first enrolled in Provident Fund."
     )
     hds_in_existing_epf_member = fields.Boolean(
         string="Existing EPF Member",
-        help="Check if employee was an existing EPF member prior to joining."
+        default=True,
+        help="Check if employee had a prior EPF account before joining this company."
     )
+    hds_in_is_international_worker = fields.Boolean(
+        string="International Worker",
+        default=False,
+        help="Check if employee is classified as an International Worker under EPFO rules."
+    )
+
+    # EPS (Pension) Information
     hds_in_eps_applicable = fields.Boolean(
         string="EPS Applicable",
         default=True,
-        help="Check if Employee Pension Scheme applies to this employee."
+        help="Enable EPS statutory pension allocation (8.33%)."
     )
     hds_in_existing_eps_member = fields.Boolean(
         string="Existing EPS Member",
-        help="Check if employee was an existing EPS member prior to joining."
+        default=True,
+        help="Check if employee was enrolled in EPS scheme prior to 01-Sep-2014 or current joining."
+    )
+    hds_in_higher_pension = fields.Boolean(
+        string="Opted for Higher Pension Scheme",
+        default=False,
+        help="Check if employee opted for higher pension scheme under SC judgment guidelines."
     )
     hds_in_pf_contribution_basis = fields.Selection([
-        ('statutory_ceiling', 'Statutory Wage Ceiling'),
-        ('actual_basic', 'Actual PF Wage'),
-    ], string="PF Contribution Basis", default='statutory_ceiling', required=True,
-       help="Basis for calculating PF contribution (capped at statutory wage ceiling vs actual PF wage).")
-    hds_in_higher_pension = fields.Boolean(
-        string="Opted for Higher Pension",
-        default=False,
-        help="Opted for EPS contribution on actual basic/PF wage per Supreme Court 2022 judgment."
-    )
-    hds_in_is_international_worker = fields.Boolean(
-        string="Is International Worker",
-        default=False,
-        help="International workers have no statutory wage ceiling cap."
-    )
+        ('statutory_restricted', 'Statutory Restricted (₹15,000 Cap)'),
+        ('actual_basic', 'Actual Basic Pay (Uncapped)'),
+    ], string="PF Contribution Basis", default='statutory_restricted', required=True)
+
+    # VPF (Voluntary Provident Fund)
     hds_in_vpf_type = fields.Selection([
         ('none', 'None'),
-        ('percent', 'Percentage of PF Wage'),
+        ('percent', 'Percentage of Basic Pay'),
         ('fixed', 'Fixed Monthly Amount'),
-    ], string="VPF Contribution Type", default='none', required=True,
-       help="Voluntary Provident Fund contribution type.")
+    ], string="VPF Contribution Type", default='none', required=True)
+
     hds_in_vpf_percent = fields.Float(
         string="VPF Percentage (%)",
         help="Additional VPF percentage contributed by employee."
@@ -67,31 +75,51 @@ class HrEmployee(models.Model):
 
     # ESIC Information
     hds_in_esic_applicable = fields.Boolean(
-        string="ESIC Applicable"
+        string="ESIC Applicable",
+        default=False,
+        help="Enable Employees' State Insurance (ESIC) statutory compliance for this employee."
     )
     hds_in_esic_ip_number = fields.Char(
-        string="ESIC IP Number"
+        string="ESIC IP Number",
+        help="17-digit ESIC Insured Person (IP) Number."
     )
     hds_in_esic_joining_date = fields.Date(
-        string="Date of Joining ESIC"
+        string="Date of Joining ESIC",
+        help="Date of enrollment into ESIC."
     )
     hds_in_esic_exit_date = fields.Date(
-        string="Date of Exit ESIC"
+        string="Date of Exit ESIC",
+        help="Date of exit from ESIC scheme."
     )
     hds_in_esic_ip_status = fields.Selection([
         ('active', 'Active'),
-        ('inactive', 'Inactive'),
-    ], string="Insured Person Status")
+        ('exempt', 'Exempt'),
+        ('resigned', 'Resigned'),
+        ('disabled', 'Disabled'),
+    ], string="Insured Person Status", default='active', help="Current ESIC Insured Person (IP) compliance status.")
+
+    hds_in_is_pwd = fields.Boolean(
+        string="Person with Disability (PWD)",
+        default=False,
+        help="Indicates that the employee is eligible for the statutory ESIC PWD wage ceiling limit."
+    )
+
     hds_in_esic_contribution_basis = fields.Char(
         string="Contribution Basis",
         readonly=True,
-        default="Gross Wages (Statutory)"
+        default="Gross Wages (Statutory)",
+        help="ESIC contribution basis is calculated on gross wages per statutory rules."
     )
     hds_in_esic_contribution_period = fields.Char(
-        string="Contribution Period"
+        string="Contribution Period",
+        compute='_compute_esic_contribution_period',
+        store=True,
+        readonly=True,
+        help="Half-yearly ESIC statutory contribution period derived automatically from joining date or current date."
     )
     hds_in_esic_dispensary = fields.Char(
-        string="ESIC Dispensary"
+        string="ESIC Dispensary",
+        help="Nominated ESIC Dispensary / Medical Benefit Hospital."
     )
     hds_in_esic_exit_reason = fields.Selection([
         ('wage_exceeded', 'Salary Exceeded Limit'),
@@ -99,7 +127,7 @@ class HrEmployee(models.Model):
         ('death', 'Death'),
         ('retired', 'Retired'),
         ('other', 'Other'),
-    ], string="Reason for Exit ESIC")
+    ], string="Reason for Exit ESIC", help="Reason for exit from ESIC coverage.")
 
     hds_in_employer_cost_monthly = fields.Monetary(
         string="Employer Cost (Monthly)",
@@ -108,94 +136,111 @@ class HrEmployee(models.Model):
         help="Monthly Employer Cost to Company (CTC)."
     )
     hds_in_employer_cost_annual = fields.Monetary(
-        string="Employer Cost to Company (CTC)",
+        string="Employer Cost (Annual)",
         compute='_compute_hds_in_employer_cost',
         currency_field='currency_id',
         help="Annual Employer Cost to Company (CTC)."
     )
 
-    def _compute_hds_in_employer_cost(self):
-        for emp in self:
-            contract = self.env['hr.version'].search([('employee_id', '=', emp.id)], order='id desc', limit=1)
-            if contract:
-                if (not contract.hds_in_employer_cost_monthly or contract.hds_in_employer_cost_monthly == 0.0) and (contract.wage or 0.0) > 0:
-                    contract._compute_employer_cost()
-                emp.hds_in_employer_cost_monthly = contract.hds_in_employer_cost_monthly
-                emp.hds_in_employer_cost_annual = contract.hds_in_employer_cost_annual
-            else:
-                emp.hds_in_employer_cost_monthly = 0.0
-                emp.hds_in_employer_cost_annual = 0.0
-
-
-
-
     hds_in_statutory_audit_count = fields.Integer(
-
-        string="Statutory Audits",
+        string="Statutory Audits Count",
         compute='_compute_hds_in_statutory_audit_count'
     )
 
-    def _compute_hds_in_statutory_audit_count(self):
-        audit_data = self.env['hds.in.payroll.audit'].read_group(
-            [('employee_id', 'in', self.ids)],
-            ['employee_id'],
-            ['employee_id']
-        )
-        mapped_data = {data['employee_id'][0]: data['employee_id_count'] for data in audit_data}
+    @api.depends('hds_in_esic_joining_date', 'hds_in_esic_applicable')
+    def _compute_esic_contribution_period(self):
+        today = fields.Date.today()
         for emp in self:
-            emp.hds_in_statutory_audit_count = mapped_data.get(emp.id, 0)
+            if not emp.hds_in_esic_applicable:
+                emp.hds_in_esic_contribution_period = False
+                continue
+            ref_date = emp.hds_in_esic_joining_date or today
+            year = ref_date.year
+            month = ref_date.month
+            if 4 <= month <= 9:
+                emp.hds_in_esic_contribution_period = f"April {year} – September {year}"
+            elif month >= 10:
+                emp.hds_in_esic_contribution_period = f"October {year} – March {year + 1}"
+            else:
+                emp.hds_in_esic_contribution_period = f"October {year - 1} – March {year}"
+
+    def _evaluate_default_esic_applicable(self, gross_wage=None, eval_date=None):
+        """
+        Evaluates default ESIC applicability based on company ESIC configuration,
+        employee PWD status, gross wage, and effective-dated hr.rule.parameter ceilings.
+        Never hardcodes statutory ceilings.
+        """
+        self.ensure_one()
+        company = self.company_id or self.env.company
+        if not company or not company.hds_in_esic_applicable:
+            return False
+
+        if eval_date is None:
+            eval_date = fields.Date.today()
+
+        if gross_wage is None:
+            contract = self.env['hr.version'].search([
+                ('employee_id', '=', self.id),
+                ('state', 'in', ['draft', 'open'])
+            ], limit=1, order='date_start desc')
+            gross_wage = contract.wage if contract else 0.0
+
+        if self.hds_in_is_pwd:
+            ceiling = self.env['hr.rule.parameter'].get_parameter('hds_in_esic_pwd_wage_ceiling', date=eval_date)
+        else:
+            ceiling = self.env['hr.rule.parameter'].get_parameter('hds_in_esic_wage_ceiling', date=eval_date)
+
+        if ceiling and gross_wage > 0.0:
+            return gross_wage <= ceiling
+        elif gross_wage <= 0.0:
+            return True
+        return False
+
+    @api.onchange('hds_in_is_pwd', 'company_id')
+    def _onchange_esic_default_triggers(self):
+        """Triggered on employee form when PWD status or company changes."""
+        for emp in self:
+            emp.hds_in_esic_applicable = emp._evaluate_default_esic_applicable()
+
+    @api.constrains('hds_in_esic_applicable', 'hds_in_esic_ip_number')
+    def _check_esic_ip_number(self):
+        for emp in self:
+            if emp.hds_in_esic_applicable and emp.hds_in_esic_ip_number:
+                ip_clean = emp.hds_in_esic_ip_number.strip()
+                if not ip_clean.isdigit():
+                    raise ValidationError(_("ESIC IP Number must contain digits only. Invalid value: '%s'") % emp.hds_in_esic_ip_number)
+                if len(ip_clean) != 17:
+                    raise ValidationError(_("ESIC IP Number must be exactly 17 digits. Provided length: %d digits.") % len(ip_clean))
+                duplicate = self.search([
+                    ('id', '!=', emp.id),
+                    ('hds_in_esic_ip_number', '=', ip_clean)
+                ], limit=1)
+                if duplicate:
+                    raise ValidationError(_("ESIC IP Number '%s' is already registered for employee '%s'. Duplicate IP numbers are not allowed.") % (ip_clean, duplicate.name))
+
+    @api.depends('hds_in_epf_applicable', 'hds_in_eps_applicable')
+    def _compute_hds_in_employer_cost(self):
+        for emp in self:
+            contract = emp.contract_id if hasattr(emp, 'contract_id') else False
+            wage = contract.wage if contract else 0.0
+            emp_epf_rate = self.env['hr.rule.parameter'].get_pf_parameter('EMPLOYER_EPF_RATE', as_decimal=True) if emp.hds_in_epf_applicable else 0.0
+            monthly_cost = wage + (wage * emp_epf_rate)
+            emp.hds_in_employer_cost_monthly = monthly_cost
+            emp.hds_in_employer_cost_annual = monthly_cost * 12.0
+
+    def _compute_hds_in_statutory_audit_count(self):
+        for emp in self:
+            emp.hds_in_statutory_audit_count = self.env['hds.in.payroll.audit'].search_count([
+                ('employee_id', '=', emp.id)
+            ])
 
     def action_view_statutory_audits(self):
         self.ensure_one()
-        action = self.env["ir.actions.actions"]._for_xml_id("hudson_in_payroll.hds_in_payroll_audit_action")
-        action['domain'] = [('employee_id', '=', self.id)]
-        action['context'] = {'default_employee_id': self.id}
-        return action
-
-    def _register_hook(self):
-        """
-        Execute DDL column creation during model registration hook.
-        Guarantees PostgreSQL columns exist BEFORE base module web search/read execution.
-        """
-        super()._register_hook()
-        cr = self.env.cr
-        try:
-            cr.execute("""
-                ALTER TABLE hr_employee
-                ADD COLUMN IF NOT EXISTS hds_in_epf_applicable boolean DEFAULT true,
-                ADD COLUMN IF NOT EXISTS hds_in_uan varchar,
-                ADD COLUMN IF NOT EXISTS hds_in_pf_member_id varchar,
-                ADD COLUMN IF NOT EXISTS hds_in_pf_joining_date date,
-                ADD COLUMN IF NOT EXISTS hds_in_existing_epf_member boolean DEFAULT false,
-                ADD COLUMN IF NOT EXISTS hds_in_eps_applicable boolean DEFAULT true,
-                ADD COLUMN IF NOT EXISTS hds_in_existing_eps_member boolean DEFAULT false,
-                ADD COLUMN IF NOT EXISTS hds_in_pf_contribution_basis varchar DEFAULT 'statutory_ceiling',
-                ADD COLUMN IF NOT EXISTS hds_in_higher_pension boolean DEFAULT false,
-                ADD COLUMN IF NOT EXISTS hds_in_is_international_worker boolean DEFAULT false,
-                ADD COLUMN IF NOT EXISTS hds_in_vpf_type varchar DEFAULT 'none',
-                ADD COLUMN IF NOT EXISTS hds_in_vpf_percent double precision DEFAULT 0.0,
-                ADD COLUMN IF NOT EXISTS hds_in_vpf_amount double precision DEFAULT 0.0;
-            """)
-        except Exception:
-            pass
-
-    def _auto_init(self):
-        """Pre-emptively ensure EPF fields exist in PostgreSQL hr_employee table."""
-        cr = self.env.cr
-        cr.execute("""
-            ALTER TABLE hr_employee
-            ADD COLUMN IF NOT EXISTS hds_in_epf_applicable boolean DEFAULT true,
-            ADD COLUMN IF NOT EXISTS hds_in_uan varchar,
-            ADD COLUMN IF NOT EXISTS hds_in_pf_member_id varchar,
-            ADD COLUMN IF NOT EXISTS hds_in_pf_joining_date date,
-            ADD COLUMN IF NOT EXISTS hds_in_existing_epf_member boolean DEFAULT false,
-            ADD COLUMN IF NOT EXISTS hds_in_eps_applicable boolean DEFAULT true,
-            ADD COLUMN IF NOT EXISTS hds_in_existing_eps_member boolean DEFAULT false,
-            ADD COLUMN IF NOT EXISTS hds_in_pf_contribution_basis varchar DEFAULT 'statutory_ceiling',
-            ADD COLUMN IF NOT EXISTS hds_in_higher_pension boolean DEFAULT false,
-            ADD COLUMN IF NOT EXISTS hds_in_is_international_worker boolean DEFAULT false,
-            ADD COLUMN IF NOT EXISTS hds_in_vpf_type varchar DEFAULT 'none',
-            ADD COLUMN IF NOT EXISTS hds_in_vpf_percent double precision DEFAULT 0.0,
-            ADD COLUMN IF NOT EXISTS hds_in_vpf_amount double precision DEFAULT 0.0;
-        """)
-        return super()._auto_init()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Statutory Audit Logs'),
+            'res_model': 'hds.in.payroll.audit',
+            'view_mode': 'list,form',
+            'domain': [('employee_id', '=', self.id)],
+            'context': {'default_employee_id': self.id},
+        }

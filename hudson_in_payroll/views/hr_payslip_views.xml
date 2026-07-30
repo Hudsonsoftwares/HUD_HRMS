@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Make Salary Rule Categories Menu Item Visible under Configuration for all Payroll Users -->
+    <menuitem id="hr_payroll_community.menu_hr_salary_rule_category"
+              name="Salary Rule Categories"
+              action="hr_payroll_community.hr_salary_rule_category_action"
+              parent="hr_payroll_community.menu_hr_payroll_community_configuration"
+              sequence="11"
+              groups="hr_payroll_community.group_hr_payroll_community_user,hr_payroll_community.group_hr_payroll_community_manager"/>
+
     <!-- 1. Extend Payslip Form View with Statutory Audits & Column Visibility Toggles -->
     <record id="hds_in_view_hr_payslip_form" model="ir.ui.view">
         <field name="name">hr.payslip.form.inherit.hudson.payroll</field>

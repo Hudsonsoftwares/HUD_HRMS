@@ -2,6 +2,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from ..services.epf.epf_service import EPFService
+from ..services.esic.esic_service import ESICService
 
 
 class HrPayslip(models.Model):
@@ -25,6 +26,7 @@ class HrPayslip(models.Model):
         HrPayslip._eval_contexts[self.id] = localdict
         localdict.update({
             'epf_service': EPFService(self.env, localdict=localdict),
+            'esic_service': ESICService(self.env, localdict=localdict),
             'payslip_record': self,
         })
         return localdict
@@ -267,6 +269,21 @@ class HrPayslip(models.Model):
     def hds_in_compute_edli_admin_charge(self):
         """Alias for hds_in_compute_edli_admin for backward compatibility."""
         return self.hds_in_compute_edli_admin()
+
+    # -------------------------------------------------------------------------
+    # PUBLIC ESIC ORCHESTRATION API FOR SALARY RULES (Zero Arguments in XML)
+    # -------------------------------------------------------------------------
+    def hds_in_compute_esic_wage(self):
+        """Public API entrypoint for ESIC_WAGE Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(ESICService, 'compute_esic_wage')
+
+    def hds_in_compute_esic_employee(self):
+        """Public API entrypoint for ESIC_EE Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(ESICService, 'compute_esic_employee', negate=True)
+
+    def hds_in_compute_esic_employer(self):
+        """Public API entrypoint for ESIC_ER Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(ESICService, 'compute_esic_employer')
 
     # -------------------------------------------------------------------------
     # WAGE RESOLUTION HELPERS
