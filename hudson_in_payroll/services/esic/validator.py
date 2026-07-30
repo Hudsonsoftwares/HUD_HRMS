@@ -49,8 +49,25 @@ class ESICValidator(BaseStatutoryService):
         if employee.hds_in_esic_exit_date and payslip.date_from and employee.hds_in_esic_exit_date < payslip.date_from:
             return False
 
+        from .contribution_period_service import ESICContributionPeriodService
+        period_service = ESICContributionPeriodService(self.env)
+        eval_date = payslip.date_to or payslip.date_from
+        if not period_service.is_covered_for_contribution_period(employee, eval_date=eval_date):
+            return False
+
         return True
 
     def is_esic_applicable(self, payslip):
         """Alias for is_esic_eligible."""
         return self.is_esic_eligible(payslip)
+
+    def get_applicable_ceiling(self, payslip):
+        """
+        Determines applicable ESIC wage ceiling dynamically from hr.rule.parameter:
+        - IF Employee hds_in_is_pwd = True -> Use ESIC PWD Wage Ceiling ('hds_in_esic_pwd_wage_ceiling')
+        - ELSE -> Use Standard ESIC Wage Ceiling ('hds_in_esic_wage_ceiling')
+        """
+        eval_date = payslip.date_to or self.env.context.get('date')
+        if payslip.employee_id and payslip.employee_id.hds_in_is_pwd:
+            return self.get_parameter('hds_in_esic_pwd_wage_ceiling', date=eval_date)
+        return self.get_parameter('hds_in_esic_wage_ceiling', date=eval_date)

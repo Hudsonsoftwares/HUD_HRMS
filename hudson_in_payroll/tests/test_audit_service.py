@@ -18,7 +18,7 @@ class TestStatutoryAuditService(TransactionCase):
             'name': 'Audit Test Employee',
             'hds_in_epf_applicable': True,
             'hds_in_eps_applicable': True,
-            'hds_in_pf_contribution_basis': 'statutory_ceiling',
+            'hds_in_pf_contribution_basis': 'restricted_ceiling',
             'hds_in_uan': '100987654321',
         })
 

@@ -21,7 +21,7 @@ class StatutoryRefreshService(BaseStatutoryService):
 
         # 1. ESIC Applicability Default Refresh
         if hasattr(employee, '_evaluate_default_esic_applicable'):
-            default_esic = employee._evaluate_default_esic_applicable(gross_wage=new_wage, eval_date=effective_date)
+            default_esic = employee._evaluate_default_esic_applicable(eval_date=effective_date)
             employee.write({'hds_in_esic_applicable': default_esic})
 
         # 2. EPF & Employer Cost Refresh

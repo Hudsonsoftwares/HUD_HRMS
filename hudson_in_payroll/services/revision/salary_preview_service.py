@@ -86,11 +86,12 @@ class SalaryPreviewService(BaseStatutoryService):
         new_esic_service = ESICService(self.env, localdict=new_ctx)
 
         company = employee.company_id or self.env.company
-        esic_ceiling_code = 'hds_in_esic_pwd_wage_ceiling' if employee.hds_in_is_pwd else 'hds_in_esic_wage_ceiling'
-        esic_ceiling = self.get_parameter(esic_ceiling_code, date=effective_date) or 21000.0
+        from ..esic.contribution_period_service import ESICContributionPeriodService
+        period_service = ESICContributionPeriodService(self.env)
+        is_esic_covered = period_service.is_covered_for_contribution_period(employee, eval_date=effective_date)
 
-        old_esic_app = bool(company.hds_in_esic_applicable and employee.hds_in_esic_applicable and current_wage <= esic_ceiling)
-        new_esic_app = bool(company.hds_in_esic_applicable and employee.hds_in_esic_applicable and revised_wage <= esic_ceiling)
+        old_esic_app = bool(company.hds_in_esic_applicable and employee.hds_in_esic_applicable and is_esic_covered)
+        new_esic_app = bool(company.hds_in_esic_applicable and employee.hds_in_esic_applicable and is_esic_covered)
 
         old_ee_esic = old_esic_service.compute_esic_employee(old_sim_payslip) if old_esic_app else 0.0
         new_ee_esic = new_esic_service.compute_esic_employee(new_sim_payslip) if new_esic_app else 0.0
@@ -105,6 +106,24 @@ class SalaryPreviewService(BaseStatutoryService):
         # 5. Employer Cost (CTC) Simulation
         old_ctc = current_wage + old_er_pf + old_edli + (old_epf_wage * 0.005 if employee.hds_in_epf_applicable else 0.0) + old_er_esic
         new_ctc = revised_wage + new_er_pf + new_edli + (new_epf_wage * 0.005 if employee.hds_in_epf_applicable else 0.0) + new_er_esic
+
+        # Statutory Contribution Period Details for UI Preview
+        import datetime
+        cur_start, cur_end = period_service.get_contribution_period_bounds(effective_date)
+        esic_cur_period_label = f"({cur_start.strftime('%b %Y')} – {cur_end.strftime('%b %Y')})"
+        esic_cur_period_status = old_esic_app or new_esic_app
+
+        next_ref_date = cur_end + datetime.timedelta(days=1)
+        next_start, next_end = period_service.get_contribution_period_bounds(next_ref_date)
+        esic_next_period_label = f"({next_start.strftime('%b %Y')} – {next_end.strftime('%b %Y')})"
+
+        esic_ceiling = period_service.get_parameter('hds_in_esic_pwd_wage_ceiling', date=next_start) if getattr(employee, 'hds_in_is_pwd', False) else period_service.get_parameter('hds_in_esic_wage_ceiling', date=next_start)
+        esic_next_period_status = bool(company.hds_in_esic_applicable and employee.hds_in_esic_applicable and (revised_wage <= esic_ceiling if esic_ceiling else True))
+
+        if not esic_next_period_status and company.hds_in_esic_applicable and employee.hds_in_esic_applicable:
+            esic_next_period_reason = f"Employee's wage at the start of the next contribution period ({next_start.strftime('%d-%b-%Y')}) exceeds the ESIC wage ceiling (₹{esic_ceiling:,.0f})."
+        else:
+            esic_next_period_reason = ""
 
         return {
             'old_wage': current_wage,
@@ -129,6 +148,11 @@ class SalaryPreviewService(BaseStatutoryService):
             'new_ee_esic': new_ee_esic,
             'old_er_esic': old_er_esic,
             'new_er_esic': new_er_esic,
+            'esic_cur_period_label': esic_cur_period_label,
+            'esic_cur_period_status': esic_cur_period_status,
+            'esic_next_period_label': esic_next_period_label,
+            'esic_next_period_status': esic_next_period_status,
+            'esic_next_period_reason': esic_next_period_reason,
             'pt_amount': pt_amount,
             'lwf_amount': lwf_amount,
         }

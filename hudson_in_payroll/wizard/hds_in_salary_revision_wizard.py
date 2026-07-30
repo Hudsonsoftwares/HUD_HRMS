@@ -265,9 +265,14 @@ class HdsInSalaryRevisionWizard(models.TransientModel):
 
     preview_old_ee_esic = fields.Monetary(string="Current Employee ESIC", currency_field='currency_id', compute='_compute_payroll_preview')
     preview_new_ee_esic = fields.Monetary(string="Estimated Employee ESIC", currency_field='currency_id', compute='_compute_payroll_preview')
-
     preview_old_er_esic = fields.Monetary(string="Current Employer ESIC", currency_field='currency_id', compute='_compute_payroll_preview')
     preview_new_er_esic = fields.Monetary(string="Estimated Employer ESIC", currency_field='currency_id', compute='_compute_payroll_preview')
+
+    preview_esic_cur_period_label = fields.Char(string="Current ESIC Period Label", compute='_compute_payroll_preview')
+    preview_esic_cur_period_status = fields.Boolean(string="Current ESIC Period Status", compute='_compute_payroll_preview')
+    preview_esic_next_period_label = fields.Char(string="Next ESIC Period Label", compute='_compute_payroll_preview')
+    preview_esic_next_period_status = fields.Boolean(string="Next ESIC Period Status", compute='_compute_payroll_preview')
+    preview_esic_next_period_reason = fields.Text(string="Next ESIC Period Reason", compute='_compute_payroll_preview')
 
     preview_pt_amount = fields.Monetary(string="Estimated Professional Tax", currency_field='currency_id', compute='_compute_payroll_preview')
     preview_lwf_amount = fields.Monetary(string="Estimated Labour Welfare Fund", currency_field='currency_id', compute='_compute_payroll_preview')
@@ -306,12 +311,19 @@ class HdsInSalaryRevisionWizard(models.TransientModel):
                 wizard.preview_new_ee_esic = 0.0
                 wizard.preview_old_er_esic = 0.0
                 wizard.preview_new_er_esic = 0.0
+                wizard.preview_esic_cur_period_label = False
+                wizard.preview_esic_cur_period_status = False
+                wizard.preview_esic_next_period_label = False
+                wizard.preview_esic_next_period_status = False
+                wizard.preview_esic_next_period_reason = False
                 wizard.preview_pt_amount = 0.0
                 wizard.preview_lwf_amount = 0.0
                 continue
 
             # Calculate revised gross wage
-            if wizard.computation_type == 'percentage':
+            if wizard.revision_basis == 'capped_wage':
+                revised_wage = wizard.capped_wage_amount
+            elif wizard.computation_type == 'percentage':
                 revised_wage = wizard.current_wage * (1.0 + (wizard.increase_percentage / 100.0))
             else:
                 revised_wage = wizard.current_wage + wizard.increase_amount
@@ -357,6 +369,11 @@ class HdsInSalaryRevisionWizard(models.TransientModel):
             wizard.preview_new_ee_esic = preview['new_ee_esic']
             wizard.preview_old_er_esic = preview['old_er_esic']
             wizard.preview_new_er_esic = preview['new_er_esic']
+            wizard.preview_esic_cur_period_label = preview['esic_cur_period_label']
+            wizard.preview_esic_cur_period_status = preview['esic_cur_period_status']
+            wizard.preview_esic_next_period_label = preview['esic_next_period_label']
+            wizard.preview_esic_next_period_status = preview['esic_next_period_status']
+            wizard.preview_esic_next_period_reason = preview['esic_next_period_reason']
             wizard.preview_pt_amount = preview['pt_amount']
             wizard.preview_lwf_amount = preview['lwf_amount']
 

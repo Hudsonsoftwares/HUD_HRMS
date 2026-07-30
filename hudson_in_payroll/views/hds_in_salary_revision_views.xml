@@ -93,6 +93,33 @@
                                     <field name="new_pt_amount" widget="monetary" readonly="1"/>
                                 </group>
                             </group>
+
+                            <!-- ESIC CONTRIBUTION PERIOD STATUTORY STATUS PANEL -->
+                            <group string="ESIC Contribution Period Status" class="w-100">
+                                <div class="card p-3 mb-2 bg-light border-0 col-12">
+                                    <div class="row">
+                                        <div class="col-md-6 border-end">
+                                            <h6 class="text-primary font-weight-bold">Current Contribution Period</h6>
+                                            <p class="mb-1 text-muted"><field name="esic_cur_period_label" readonly="1" nolabel="1"/></p>
+                                            <field name="esic_cur_period_status" widget="boolean_toggle" readonly="1" string="Current Period Eligibility"/>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary font-weight-bold">Next Contribution Period</h6>
+                                            <p class="mb-1 text-muted"><field name="esic_next_period_label" readonly="1" nolabel="1"/></p>
+                                            <field name="esic_next_period_status" widget="boolean_toggle" readonly="1" string="Next Period Eligibility"/>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-warning mt-2 mb-0" role="alert" invisible="not esic_next_period_reason">
+                                        <i class="fa fa-exclamation-triangle me-1"></i>
+                                        <strong>Reason:</strong> <field name="esic_next_period_reason" readonly="1" nolabel="1"/>
+                                    </div>
+                                    <div class="alert alert-info mt-2 mb-0" role="alert">
+                                        <small>
+                                            <strong>Informational Note:</strong> ESIC eligibility is governed by statutory contribution periods. A salary revision during an active contribution period does not immediately stop ESIC deductions. Eligibility is automatically re-evaluated from the beginning of the next contribution period based on the employee's wage on that date.
+                                        </small>
+                                    </div>
+                                </div>
+                            </group>
                         </page>
 
                         <page string="Reason &amp; Audit Trail">

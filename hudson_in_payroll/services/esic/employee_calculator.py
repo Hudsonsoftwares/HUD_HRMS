@@ -11,20 +11,15 @@ class ESICEmployeeCalculator(BaseStatutoryService):
     No hardcoded rates or thresholds.
     """
 
-    def __init__(self, env, wage_calc, validator):
+    def __init__(self, env, validator=None):
         super().__init__(env)
-        self.wage_calc = wage_calc
         self.validator = validator
 
-    def compute(self, payslip):
+    def compute(self, payslip, esic_wage=0.0):
         """
         Computes employee ESIC deduction amount.
         Returns rounded statutory deduction amount (nearest upper rupee rounding as per ESIC rules).
         """
-        if not self.validator.is_esic_eligible(payslip):
-            return 0.0
-
-        esic_wage = self.wage_calc.get_esic_contributable_wage(payslip)
         if esic_wage <= 0.0:
             return 0.0
 

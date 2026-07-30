@@ -170,33 +170,17 @@ class HrEmployee(models.Model):
 
     def _evaluate_default_esic_applicable(self, gross_wage=None, eval_date=None):
         """
-        Evaluates default ESIC applicability based on company ESIC configuration,
-        employee PWD status, gross wage, and effective-dated hr.rule.parameter ceilings.
-        Never hardcodes statutory ceilings.
+        Evaluates ESIC applicability based on statutory contribution period bounds and period-start wage.
+        Enforces Regulation 31 continuity: Gross wage on first day of Contribution Period defines coverage.
         """
         self.ensure_one()
         company = self.company_id or self.env.company
         if not company or not company.hds_in_esic_applicable:
             return False
 
-        if eval_date is None:
-            eval_date = fields.Date.today()
-
-        if gross_wage is None:
-            contracts = self.env['hr.version'].search([('employee_id', '=', self.id)])
-            contract = contracts.sorted(lambda c: c.date_start or fields.Date.today(), reverse=True)[0] if contracts else False
-            gross_wage = contract.wage if contract else 0.0
-
-        if self.hds_in_is_pwd:
-            ceiling = self.env['hr.rule.parameter'].get_parameter('hds_in_esic_pwd_wage_ceiling', date=eval_date)
-        else:
-            ceiling = self.env['hr.rule.parameter'].get_parameter('hds_in_esic_wage_ceiling', date=eval_date)
-
-        if ceiling and gross_wage > 0.0:
-            return gross_wage <= ceiling
-        elif gross_wage <= 0.0:
-            return True
-        return False
+        from ..services.esic.contribution_period_service import ESICContributionPeriodService
+        period_service = ESICContributionPeriodService(self.env)
+        return period_service.is_covered_for_contribution_period(self, eval_date=eval_date)
 
     @api.onchange('hds_in_is_pwd', 'company_id')
     def _onchange_esic_default_triggers(self):

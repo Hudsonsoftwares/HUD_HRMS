@@ -103,9 +103,8 @@ class HrVersion(models.Model):
     @api.onchange('wage', 'employee_id')
     def _onchange_wage_sync_esic(self):
         for contract in self:
-            if contract.employee_id and contract.wage:
+            if contract.employee_id:
                 default_esic = contract.employee_id._evaluate_default_esic_applicable(
-                    gross_wage=contract.wage,
                     eval_date=contract.date_start or fields.Date.today()
                 )
                 contract.employee_id.hds_in_esic_applicable = default_esic
@@ -120,7 +119,6 @@ class HrVersion(models.Model):
         if not employee:
             return
         default_esic = employee._evaluate_default_esic_applicable(
-            gross_wage=self.wage,
             eval_date=self.date_start or fields.Date.today()
         )
         employee.write({'hds_in_esic_applicable': default_esic})
