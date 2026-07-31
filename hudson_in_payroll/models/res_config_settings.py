@@ -70,6 +70,38 @@ class ResConfigSettings(models.TransientModel):
         string="LWF Registration Number"
     )
 
+    # Payroll Structure & Bonus Management Settings
+    hds_in_regular_struct_id = fields.Many2one(
+        related='company_id.hds_in_regular_struct_id',
+        readonly=False,
+        string="Regular Payroll Structure"
+    )
+    hds_in_bonus_struct_id = fields.Many2one(
+        related='company_id.hds_in_bonus_struct_id',
+        readonly=False,
+        string="Bonus Payroll Structure"
+    )
+    hds_in_bonus_apply_tds = fields.Boolean(
+        related='company_id.hds_in_bonus_apply_tds',
+        readonly=False,
+        string="Apply TDS"
+    )
+    hds_in_bonus_apply_pf = fields.Boolean(
+        related='company_id.hds_in_bonus_apply_pf',
+        readonly=False,
+        string="Apply PF"
+    )
+    hds_in_bonus_apply_esi = fields.Boolean(
+        related='company_id.hds_in_bonus_apply_esi',
+        readonly=False,
+        string="Apply ESI"
+    )
+    hds_in_bonus_apply_pt = fields.Boolean(
+        related='company_id.hds_in_bonus_apply_pt',
+        readonly=False,
+        string="Apply Professional Tax"
+    )
+
     hds_in_is_india_company = fields.Boolean(
         string="Is India Company",
         compute='_compute_hds_in_is_india_company'

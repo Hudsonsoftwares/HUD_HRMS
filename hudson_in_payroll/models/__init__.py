@@ -9,4 +9,6 @@ from . import hr_contract
 from . import hr_payslip
 from . import hds_in_salary_revision
 from . import lwf_state_rate
+from . import hds_in_bonus
+
 

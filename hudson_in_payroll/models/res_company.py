@@ -61,6 +61,38 @@ class ResCompany(models.Model):
         help="Statutory Registration / Establishment Code under Labour Welfare Fund Act."
     )
 
+    # Payroll & Bonus Management Configuration Fields
+    hds_in_regular_struct_id = fields.Many2one(
+        'hr.payroll.structure',
+        string="Regular Payroll Structure",
+        help="Default Salary Structure used for regular monthly payroll processing."
+    )
+    hds_in_bonus_struct_id = fields.Many2one(
+        'hr.payroll.structure',
+        string="Bonus Payroll Structure",
+        help="Default Salary Structure used for separate bonus payroll processing."
+    )
+    hds_in_bonus_apply_tds = fields.Boolean(
+        string="Apply TDS on Bonus",
+        default=True,
+        help="If checked, Tax Deducted at Source (TDS) rule applies to Bonus Payroll."
+    )
+    hds_in_bonus_apply_pf = fields.Boolean(
+        string="Apply PF on Bonus",
+        default=False,
+        help="If checked, Provident Fund (PF) rule applies to Bonus Payroll."
+    )
+    hds_in_bonus_apply_esi = fields.Boolean(
+        string="Apply ESI on Bonus",
+        default=False,
+        help="If checked, Employee State Insurance (ESI) rule applies to Bonus Payroll."
+    )
+    hds_in_bonus_apply_pt = fields.Boolean(
+        string="Apply Professional Tax on Bonus",
+        default=False,
+        help="If checked, Professional Tax (PT) rule applies to Bonus Payroll."
+    )
+
     def _register_hook(self):
         """
         Execute DDL column creation during model registration hook.
@@ -78,14 +110,20 @@ class ResCompany(models.Model):
                 ADD COLUMN IF NOT EXISTS hds_in_esic_registration_no varchar,
                 ADD COLUMN IF NOT EXISTS hds_in_esic_branch_office varchar,
                 ADD COLUMN IF NOT EXISTS hds_in_enable_lwf boolean DEFAULT true,
-                ADD COLUMN IF NOT EXISTS hds_in_lwf_registration_no varchar;
+                ADD COLUMN IF NOT EXISTS hds_in_lwf_registration_no varchar,
+                ADD COLUMN IF NOT EXISTS hds_in_regular_struct_id integer,
+                ADD COLUMN IF NOT EXISTS hds_in_bonus_struct_id integer,
+                ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_tds boolean DEFAULT true,
+                ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_pf boolean DEFAULT false,
+                ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_esi boolean DEFAULT false,
+                ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_pt boolean DEFAULT false;
             """)
         except Exception:
             pass
 
     def _auto_init(self):
         """
-        Pre-emptively ensure ESIC and LWF columns exist in PostgreSQL res_company table.
+        Pre-emptively ensure ESIC, LWF and Bonus columns exist in PostgreSQL res_company table.
         """
         cr = self.env.cr
         cr.execute("""
@@ -96,6 +134,13 @@ class ResCompany(models.Model):
             ADD COLUMN IF NOT EXISTS hds_in_esic_registration_no varchar,
             ADD COLUMN IF NOT EXISTS hds_in_esic_branch_office varchar,
             ADD COLUMN IF NOT EXISTS hds_in_enable_lwf boolean DEFAULT true,
-            ADD COLUMN IF NOT EXISTS hds_in_lwf_registration_no varchar;
+            ADD COLUMN IF NOT EXISTS hds_in_lwf_registration_no varchar,
+            ADD COLUMN IF NOT EXISTS hds_in_regular_struct_id integer,
+            ADD COLUMN IF NOT EXISTS hds_in_bonus_struct_id integer,
+            ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_tds boolean DEFAULT true,
+            ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_pf boolean DEFAULT false,
+            ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_esi boolean DEFAULT false,
+            ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_pt boolean DEFAULT false;
         """)
         return super(ResCompany, self)._auto_init()
+

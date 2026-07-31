@@ -11,6 +11,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/hds_in_bonus_security.xml',
         'data/hr_salary_rule_category.xml',
         'data/hr_rule_parameters.xml',
         'data/hr_salary_rule_pf.xml',
@@ -18,6 +19,7 @@
         'data/hr_salary_rule_lwf.xml',
         'data/lwf_state_rate_data.xml',
         'data/hr_salary_rules.xml',
+        'data/hr_bonus_payroll_data.xml',
         'views/res_config_settings_views.xml',
         'views/hr_rule_parameter_views.xml',
         'views/lwf_state_rate_views.xml',
@@ -28,6 +30,7 @@
         'views/hds_in_payroll_audit_views.xml',
         'wizard/hds_in_salary_revision_wizard_views.xml',
         'views/hds_in_salary_revision_views.xml',
+        'views/hds_in_bonus_views.xml',
     ],
     'installable': True,
     'application': False,

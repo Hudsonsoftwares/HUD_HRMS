@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Bonus Allowance Salary Rule -->
+        <record id="hds_in_rule_bonus" model="hr.salary.rule">
+            <field name="name">Bonus</field>
+            <field name="sequence" eval="10"/>
+            <field name="code">BONUS</field>
+            <field name="category_id" ref="hr_payroll_community.ALW"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = inputs.BONUS.amount if (inputs and 'BONUS' in inputs) else 0.0</field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Bonus Gross Salary Rule -->
+        <record id="hds_in_rule_bonus_gross" model="hr.salary.rule">
+            <field name="name">Gross</field>
+            <field name="sequence" eval="100"/>
+            <field name="code">GROSS</field>
+            <field name="category_id" ref="hr_payroll_community.GROSS"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories.ALW</field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Bonus TDS Deduction Rule (Optional per Company Config) -->
+        <record id="hds_in_rule_bonus_tds" model="hr.salary.rule">
+            <field name="name">TDS on Bonus</field>
+            <field name="sequence" eval="200"/>
+            <field name="code">TDS</field>
+            <field name="category_id" ref="hr_payroll_community.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(payslip.company_id.hds_in_bonus_apply_tds)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = - (categories.GROSS * 0.10)</field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Bonus PF Deduction Rule (Optional per Company Config) -->
+        <record id="hds_in_rule_bonus_pf" model="hr.salary.rule">
+            <field name="name">PF on Bonus</field>
+            <field name="sequence" eval="210"/>
+            <field name="code">PF</field>
+            <field name="category_id" ref="hr_payroll_community.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(payslip.company_id.hds_in_bonus_apply_pf)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = payslip_record.hds_in_compute_employee_epf()</field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Bonus ESI Deduction Rule (Optional per Company Config) -->
+        <record id="hds_in_rule_bonus_esi" model="hr.salary.rule">
+            <field name="name">ESI on Bonus</field>
+            <field name="sequence" eval="220"/>
+            <field name="code">ESI</field>
+            <field name="category_id" ref="hr_payroll_community.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(payslip.company_id.hds_in_bonus_apply_esi)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = payslip_record.hds_in_compute_employee_esic()</field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Bonus PT Deduction Rule (Optional per Company Config) -->
+        <record id="hds_in_rule_bonus_pt" model="hr.salary.rule">
+            <field name="name">Professional Tax on Bonus</field>
+            <field name="sequence" eval="230"/>
+            <field name="code">PT</field>
+            <field name="category_id" ref="hr_payroll_community.DED"/>
+            <field name="condition_select">python</field>
+            <field name="condition_python">result = bool(payslip.company_id.hds_in_bonus_apply_pt)</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = - 200.0</field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Bonus Net Salary Rule -->
+        <record id="hds_in_rule_bonus_net" model="hr.salary.rule">
+            <field name="name">Net Bonus</field>
+            <field name="sequence" eval="300"/>
+            <field name="code">NET</field>
+            <field name="category_id" ref="hr_payroll_community.NET"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories.GROSS + categories.DED</field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Default Bonus Payroll Salary Structure -->
+        <record id="hds_in_structure_bonus" model="hr.payroll.structure">
+            <field name="name">Bonus Payroll</field>
+            <field name="code">BONUS_STRUCT</field>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('hds_in_rule_bonus'),
+                ref('hds_in_rule_bonus_gross'),
+                ref('hds_in_rule_bonus_tds'),
+                ref('hds_in_rule_bonus_pf'),
+                ref('hds_in_rule_bonus_esi'),
+                ref('hds_in_rule_bonus_pt'),
+                ref('hds_in_rule_bonus_net')
+            ])]"/>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+    </data>
+</odoo>

@@ -8,4 +8,9 @@ access_hds_in_salary_revision_manager,access.hds.in.salary.revision.manager,mode
 access_hds_in_salary_revision_wizard_manager,access.hds.in.salary.revision.wizard.manager,model_hds_in_salary_revision_wizard,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
 access_lwf_state_rate_user,access.lwf.state.rate.user,model_lwf_state_rate,hr_payroll_community.group_hr_payroll_community_user,1,0,0,0
 access_lwf_state_rate_manager,access.lwf.state.rate.manager,model_lwf_state_rate,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
+access_hds_in_bonus_user,access.hds.in.bonus.user,model_hds_in_bonus,hr_payroll_community.group_hr_payroll_community_user,1,1,1,0
+access_hds_in_bonus_manager,access.hds.in.bonus.manager,model_hds_in_bonus,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
+access_hds_in_bonus_line_user,access.hds.in.bonus.line.user,model_hds_in_bonus_line,hr_payroll_community.group_hr_payroll_community_user,1,1,1,0
+access_hds_in_bonus_line_manager,access.hds.in.bonus.line.manager,model_hds_in_bonus_line,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
+
 

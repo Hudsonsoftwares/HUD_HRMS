@@ -118,6 +118,42 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Payroll Structures Configuration -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="hds_in_payroll_structures_setting">
+                            <div class="o_setting_right_pane">
+                                <label string="Payroll Structure Configuration" class="fw-bold"/>
+                                <div class="text-muted">
+                                    Configure default salary structures for regular monthly payroll and bonus payroll processing.
+                                </div>
+                                <div class="content-group mt8">
+                                    <div class="row mt8">
+                                        <label for="hds_in_regular_struct_id" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_regular_struct_id"/>
+                                    </div>
+                                    <div class="row mt8">
+                                        <label for="hds_in_bonus_struct_id" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_bonus_struct_id"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bonus Management Deductions Setting Box -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="hds_in_bonus_deductions_setting">
+                            <div class="o_setting_right_pane">
+                                <label string="Bonus Payroll Deductions" class="fw-bold"/>
+                                <div class="text-muted">
+                                    Select which statutory deduction rules should participate in Bonus Payroll processing.
+                                </div>
+                                <div class="content-group mt8">
+                                    <div class="field_boolean"><field name="hds_in_bonus_apply_tds"/> <label for="hds_in_bonus_apply_tds"/></div>
+                                    <div class="field_boolean"><field name="hds_in_bonus_apply_pf"/> <label for="hds_in_bonus_apply_pf"/></div>
+                                    <div class="field_boolean"><field name="hds_in_bonus_apply_esi"/> <label for="hds_in_bonus_apply_esi"/></div>
+                                    <div class="field_boolean"><field name="hds_in_bonus_apply_pt"/> <label for="hds_in_bonus_apply_pt"/></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </xpath>

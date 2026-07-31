@@ -364,3 +364,33 @@ class HrPayslip(models.Model):
         action['domain'] = [('payslip_id', '=', self.id)]
         action['context'] = {'default_payslip_id': self.id, 'default_employee_id': self.employee_id.id}
         return action
+
+    @api.model
+    def get_inputs(self, contracts, date_from, date_to):
+        res = super(HrPayslip, self).get_inputs(contracts, date_from, date_to)
+        for contract in contracts:
+            emp = contract.employee_id
+            bonus_lines = self.env['hds.in.bonus.line'].search([
+                ('employee_id', '=', emp.id),
+                ('bonus_id.payment_method', '=', 'monthly_payroll'),
+                ('bonus_id.state', 'in', ('approved', 'processed')),
+                ('bonus_id.payment_date', '>=', date_from),
+                ('bonus_id.payment_date', '<=', date_to),
+                ('amount', '>', 0.0)
+            ])
+            for b_line in bonus_lines:
+                existing = [i for i in res if i.get('code') == 'BONUS' and i.get('contract_id') == contract.id]
+                if existing:
+                    existing[0]['amount'] = b_line.amount
+                    existing[0]['name'] = b_line.bonus_id.name
+                else:
+                    res.append({
+                        'name': b_line.bonus_id.name,
+                        'code': 'BONUS',
+                        'amount': b_line.amount,
+                        'contract_id': contract.id,
+                        'date_from': date_from,
+                        'date_to': date_to,
+                    })
+        return res
+
