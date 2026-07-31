@@ -58,6 +58,18 @@ class ResConfigSettings(models.TransientModel):
         string="ESIC Branch Office"
     )
 
+    # LWF Company Configuration Related Fields
+    hds_in_enable_lwf = fields.Boolean(
+        related='company_id.hds_in_enable_lwf',
+        readonly=False,
+        string="Enable Labour Welfare Fund (LWF)"
+    )
+    hds_in_lwf_registration_no = fields.Char(
+        related='company_id.hds_in_lwf_registration_no',
+        readonly=False,
+        string="LWF Registration Number"
+    )
+
     hds_in_is_india_company = fields.Boolean(
         string="Is India Company",
         compute='_compute_hds_in_is_india_company'

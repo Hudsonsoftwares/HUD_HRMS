@@ -6,4 +6,6 @@ access_hds_in_payroll_audit_manager,access.hds.in.payroll.audit.manager,model_hd
 access_hds_in_salary_revision_user,access.hds.in.salary.revision.user,model_hds_in_salary_revision,hr_payroll_community.group_hr_payroll_community_user,1,0,0,0
 access_hds_in_salary_revision_manager,access.hds.in.salary.revision.manager,model_hds_in_salary_revision,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
 access_hds_in_salary_revision_wizard_manager,access.hds.in.salary.revision.wizard.manager,model_hds_in_salary_revision_wizard,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
+access_lwf_state_rate_user,access.lwf.state.rate.user,model_lwf_state_rate,hr_payroll_community.group_hr_payroll_community_user,1,0,0,0
+access_lwf_state_rate_manager,access.lwf.state.rate.manager,model_lwf_state_rate,hr_payroll_community.group_hr_payroll_community_manager,1,1,1,1
 

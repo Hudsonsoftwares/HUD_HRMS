@@ -87,6 +87,25 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Left Column: LWF -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="hds_in_lwf_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="hds_in_enable_lwf"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="hds_in_enable_lwf" string="Labour Welfare Fund (LWF)" class="fw-bold"/>
+                                <div class="text-muted">
+                                    Enable Labour Welfare Fund (LWF) statutory compliance for this company.
+                                </div>
+                                <div class="content-group mt8" invisible="not hds_in_enable_lwf">
+                                    <div class="row mt8">
+                                        <label for="hds_in_lwf_registration_no" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_lwf_registration_no" placeholder="e.g. LWF/MH/2024/00123"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Statutory Audit Setting Box -->
                         <div class="col-12 col-lg-6 o_setting_box" id="hds_in_statutory_audit_setting">
                             <div class="o_setting_left_pane">

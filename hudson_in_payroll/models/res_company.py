@@ -50,6 +50,17 @@ class ResCompany(models.Model):
         help="Optional. Specify the ESIC Branch/Sub Office associated with this employer."
     )
 
+    # LWF Company Configuration Fields
+    hds_in_enable_lwf = fields.Boolean(
+        string="Enable Labour Welfare Fund (LWF)",
+        default=True,
+        help="Enable Labour Welfare Fund (LWF) statutory compliance for this company."
+    )
+    hds_in_lwf_registration_no = fields.Char(
+        string="LWF Registration Number",
+        help="Statutory Registration / Establishment Code under Labour Welfare Fund Act."
+    )
+
     def _register_hook(self):
         """
         Execute DDL column creation during model registration hook.
@@ -65,16 +76,16 @@ class ResCompany(models.Model):
                 ADD COLUMN IF NOT EXISTS hds_in_esic_applicable boolean DEFAULT true,
                 ADD COLUMN IF NOT EXISTS hds_in_esic_employer_code varchar,
                 ADD COLUMN IF NOT EXISTS hds_in_esic_registration_no varchar,
-                ADD COLUMN IF NOT EXISTS hds_in_esic_branch_office varchar;
+                ADD COLUMN IF NOT EXISTS hds_in_esic_branch_office varchar,
+                ADD COLUMN IF NOT EXISTS hds_in_enable_lwf boolean DEFAULT true,
+                ADD COLUMN IF NOT EXISTS hds_in_lwf_registration_no varchar;
             """)
         except Exception:
             pass
 
     def _auto_init(self):
         """
-        Pre-emptively ensure ESIC columns exist in PostgreSQL res_company table
-        so that base Odoo search([]) operations during web UI module upgrade
-        do not raise UndefinedColumn errors.
+        Pre-emptively ensure ESIC and LWF columns exist in PostgreSQL res_company table.
         """
         cr = self.env.cr
         cr.execute("""
@@ -83,6 +94,8 @@ class ResCompany(models.Model):
             ADD COLUMN IF NOT EXISTS hds_in_esic_applicable boolean DEFAULT true,
             ADD COLUMN IF NOT EXISTS hds_in_esic_employer_code varchar,
             ADD COLUMN IF NOT EXISTS hds_in_esic_registration_no varchar,
-            ADD COLUMN IF NOT EXISTS hds_in_esic_branch_office varchar;
+            ADD COLUMN IF NOT EXISTS hds_in_esic_branch_office varchar,
+            ADD COLUMN IF NOT EXISTS hds_in_enable_lwf boolean DEFAULT true,
+            ADD COLUMN IF NOT EXISTS hds_in_lwf_registration_no varchar;
         """)
         return super(ResCompany, self)._auto_init()

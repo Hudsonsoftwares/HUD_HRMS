@@ -3,6 +3,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from ..services.epf.epf_service import EPFService
 from ..services.esic.esic_service import ESICService
+from ..services.lwf.lwf_service import LWFService
 
 
 class HrPayslip(models.Model):
@@ -27,6 +28,7 @@ class HrPayslip(models.Model):
         localdict.update({
             'epf_service': EPFService(self.env, localdict=localdict),
             'esic_service': ESICService(self.env, localdict=localdict),
+            'lwf_service': LWFService(self.env, localdict=localdict),
             'payslip_record': self,
         })
         return localdict
@@ -284,6 +286,17 @@ class HrPayslip(models.Model):
     def hds_in_compute_esic_employer(self):
         """Public API entrypoint for ESIC_ER Salary Rule (Zero arguments)."""
         return self._delegate_statutory_service(ESICService, 'compute_esic_employer')
+
+    # -------------------------------------------------------------------------
+    # PUBLIC LWF ORCHESTRATION API FOR SALARY RULES (Zero Arguments in XML)
+    # -------------------------------------------------------------------------
+    def hds_in_compute_lwf_employee(self):
+        """Public API entrypoint for LWF_EE Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(LWFService, 'compute_lwf_employee', negate=True)
+
+    def hds_in_compute_lwf_employer(self):
+        """Public API entrypoint for LWF_ER Salary Rule (Zero arguments)."""
+        return self._delegate_statutory_service(LWFService, 'compute_lwf_employer')
 
     # -------------------------------------------------------------------------
     # WAGE RESOLUTION HELPERS
