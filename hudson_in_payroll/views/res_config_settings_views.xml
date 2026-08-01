@@ -122,7 +122,7 @@
                         <!-- Payroll Structures Configuration -->
                         <div class="col-12 col-lg-6 o_setting_box" id="hds_in_payroll_structures_setting">
                             <div class="o_setting_right_pane">
-                                <label string="Payroll Structure Configuration" class="fw-bold"/>
+                                <span class="o_form_label fw-bold">Payroll Structure Configuration</span>
                                 <div class="text-muted">
                                     Configure default salary structures for regular monthly payroll and bonus payroll processing.
                                 </div>
@@ -142,7 +142,7 @@
                         <!-- Bonus Management Deductions Setting Box -->
                         <div class="col-12 col-lg-6 o_setting_box" id="hds_in_bonus_deductions_setting">
                             <div class="o_setting_right_pane">
-                                <label string="Bonus Payroll Deductions" class="fw-bold"/>
+                                <span class="o_form_label fw-bold">Bonus Payroll Deductions</span>
                                 <div class="text-muted">
                                     Select which statutory deduction rules should participate in Bonus Payroll processing.
                                 </div>

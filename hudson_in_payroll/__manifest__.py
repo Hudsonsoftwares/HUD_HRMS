@@ -31,6 +31,7 @@
         'wizard/hds_in_salary_revision_wizard_views.xml',
         'views/hds_in_salary_revision_views.xml',
         'views/hds_in_bonus_views.xml',
+        'wizard/hds_in_bonus_import_wizard_views.xml',
     ],
     'installable': True,
     'application': False,

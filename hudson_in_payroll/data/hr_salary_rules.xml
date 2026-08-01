@@ -133,7 +133,7 @@
 
         <!-- Wire Rules into Structure -->
         <record id="hr_payroll_community.structure_base" model="hr.payroll.structure">
-            <field name="rule_ids" eval="[(4, ref('hds_in_rule_epf')), (4, ref('hds_in_rule_epf_er')), (4, ref('hds_in_rule_eps')), (4, ref('hds_in_rule_epf_share')), (4, ref('hds_in_rule_edli')), (4, ref('hds_in_rule_epf_admin')), (4, ref('hds_in_rule_edli_admin'))]"/>
+            <field name="rule_ids" eval="[(4, ref('hds_in_rule_epf')), (4, ref('hds_in_rule_epf_er')), (4, ref('hds_in_rule_eps')), (4, ref('hds_in_rule_epf_share')), (4, ref('hds_in_rule_edli')), (4, ref('hds_in_rule_epf_admin')), (4, ref('hds_in_rule_edli_admin')), (4, ref('hds_in_rule_bonus'))]"/>
         </record>
     </data>
 </odoo>

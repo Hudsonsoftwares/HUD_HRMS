@@ -50,14 +50,32 @@ class HrPayslip(models.Model):
             )
             return localdict
 
+        class DummyInput(object):
+            amount = 0.0
+            number_of_days = 0.0
+            number_of_hours = 0.0
+
         class BrowsableObject(object):
             def __init__(self, employee_id, dict_val, env):
                 self.employee_id = employee_id
                 self.dict = dict_val
                 self.env = env
+                self.amount = 0.0
+
+            def __contains__(self, attr):
+                if isinstance(self.dict, dict):
+                    return attr in self.dict
+                return hasattr(self.dict, attr)
+
+            def __getitem__(self, attr):
+                if isinstance(self.dict, dict):
+                    return self.dict.get(attr, DummyInput())
+                return getattr(self.dict, attr, DummyInput())
 
             def __getattr__(self, attr):
-                return self.dict.__getitem__(attr) if attr in self.dict else 0.0
+                if isinstance(self.dict, dict):
+                    return self.dict.get(attr, DummyInput())
+                return getattr(self.dict, attr, DummyInput())
 
         class InputLine(BrowsableObject):
             def sum(self, code, from_date, to_date=None):
@@ -365,6 +383,38 @@ class HrPayslip(models.Model):
         action['context'] = {'default_payslip_id': self.id, 'default_employee_id': self.employee_id.id}
         return action
 
+    def action_compute_sheet(self):
+        """Auto-sync BONUS input lines before computing salary rules."""
+        for slip in self:
+            if slip.state == 'draft' and slip.contract_id and slip.employee_id:
+                bonus_lines = self.env['hds.in.bonus.line'].search([
+                    ('employee_id', '=', slip.employee_id.id),
+                    ('bonus_id.payment_method', '=', 'monthly_payroll'),
+                    ('bonus_id.state', 'in', ('manager_approved', 'hr_approved', 'approved', 'processed', 'paid')),
+                    ('bonus_id.date_from', '<=', slip.date_to),
+                    ('bonus_id.date_to', '>=', slip.date_from),
+                    ('amount', '>', 0.0)
+                ])
+                for b_line in bonus_lines:
+                    input_line = slip.input_line_ids.filtered(lambda i: i.code == 'BONUS')
+                    if input_line:
+                        input_line.write({'amount': b_line.amount, 'name': b_line.bonus_id.name})
+                    else:
+                        self.env['hr.payslip.input'].create({
+                            'name': b_line.bonus_id.name,
+                            'code': 'BONUS',
+                            'amount': b_line.amount,
+                            'payslip_id': slip.id,
+                            'contract_id': slip.contract_id.id,
+                            'date_from': slip.date_from,
+                            'date_to': slip.date_to,
+                        })
+        return super(HrPayslip, self).action_compute_sheet()
+
+    def compute_sheet(self):
+        """Alias for action_compute_sheet for backwards compatibility."""
+        return self.action_compute_sheet()
+
     @api.model
     def get_inputs(self, contracts, date_from, date_to):
         res = super(HrPayslip, self).get_inputs(contracts, date_from, date_to)
@@ -373,9 +423,10 @@ class HrPayslip(models.Model):
             bonus_lines = self.env['hds.in.bonus.line'].search([
                 ('employee_id', '=', emp.id),
                 ('bonus_id.payment_method', '=', 'monthly_payroll'),
-                ('bonus_id.state', 'in', ('approved', 'processed')),
-                ('bonus_id.payment_date', '>=', date_from),
-                ('bonus_id.payment_date', '<=', date_to),
+                ('bonus_id.state', 'in', ('manager_approved', 'hr_approved', 'approved', 'processed', 'paid')),
+                '|',
+                '&', ('bonus_id.date_from', '<=', date_to), ('bonus_id.date_to', '>=', date_from),
+                '&', ('bonus_id.payment_date', '>=', date_from), ('bonus_id.payment_date', '<=', date_to),
                 ('amount', '>', 0.0)
             ])
             for b_line in bonus_lines:

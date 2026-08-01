@@ -110,7 +110,7 @@
                                         </div>
                                     </div>
                                     <div class="alert alert-warning mt-2 mb-0" role="alert" invisible="not esic_next_period_reason">
-                                        <i class="fa fa-exclamation-triangle me-1"></i>
+                                        <i class="fa fa-exclamation-triangle me-1" title="Warning" aria-label="Warning" role="img"></i>
                                         <strong>Reason:</strong> <field name="esic_next_period_reason" readonly="1" nolabel="1"/>
                                     </div>
                                     <div class="alert alert-info mt-2 mb-0" role="alert">
