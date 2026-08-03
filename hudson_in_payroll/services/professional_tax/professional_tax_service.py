@@ -191,16 +191,9 @@ class ProfessionalTaxService(BaseStatutoryService):
                 audit.attach_parameter("deduction_strategy", period_sched.deduction_strategy)
 
             # 3. Wage Aggregation Basis Resolution (Monthly vs Half-Yearly vs Quarterly)
-            _logger.warning("========== PT DEBUG ==========")
-            _logger.warning("Employee: %s", emp.name if emp else None)
-            _logger.warning("State: %s", state.name if state else None)
-            _logger.warning("Periodicity: %s", periodicity)
-            _logger.warning("Single Month Salary: %s", sal)
-
             salary_basis = strategy.calculate_wage_basis(
                 self.env, emp, date_eval, current_slip=slip, current_slip_gross=sal, company=comp, period_schedule=period_sched
             )
-            _logger.warning("Calculated Salary Basis: %s", salary_basis)
             audit.attach_input("salary_basis", salary_basis)
 
             # 4. Validator Eligibility & Deduction Schedule Check
@@ -215,9 +208,6 @@ class ProfessionalTaxService(BaseStatutoryService):
             if period_sched:
                 audit.attach_parameter("deduction_strategy", period_sched.deduction_strategy)
                 audit.attach_parameter("deduction_month", period_sched.deduction_month or False)
-
-            _logger.warning("Matched Slab ID: %s", slab_rec.id if slab_rec else None)
-            _logger.warning("Matched Slab PT: %s", val_result.matched_slab.pt_amount if (val_result and val_result.matched_slab) else None)
 
             if not val_result.is_valid:
                 audit.log_message(val_result.failure_reason)

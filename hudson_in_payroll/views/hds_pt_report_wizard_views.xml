@@ -25,7 +25,9 @@
                     </group>
                 </sheet>
                 <footer>
-                    <button name="action_generate_pt_report" string="Generate Report" type="object" class="btn-primary"/>
+                    <button name="action_generate_pt_report" string="View List Report" type="object" class="btn-primary"/>
+                    <button name="action_open_pivot_graph" string="View Pivot Table &amp; Graph Chart" type="object" class="btn-info text-white"/>
+                    <button name="action_export_excel" string="Export to Excel (.xlsx)" type="object" class="btn-success"/>
                     <button string="Cancel" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

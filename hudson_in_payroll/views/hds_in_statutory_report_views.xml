@@ -154,10 +154,44 @@
         </field>
     </record>
 
+    <!-- Pivot View for Enterprise Statutory Compliance Report -->
+    <record id="hds_in_statutory_report_view_pivot" model="ir.ui.view">
+        <field name="name">hds.in.statutory.report.pivot</field>
+        <field name="model">hds.in.statutory.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Statutory Report Analysis" sample="1">
+                <field name="employee_id" type="row"/>
+                <field name="calculation_date" interval="month" type="col"/>
+                <field name="statutory_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Graph View for Enterprise Statutory Compliance Report -->
+    <record id="hds_in_statutory_report_view_graph" model="ir.ui.view">
+        <field name="name">hds.in.statutory.report.graph</field>
+        <field name="model">hds.in.statutory.report</field>
+        <field name="arch" type="xml">
+            <graph string="Statutory Report Graphical Analytics" type="bar" sample="1">
+                <field name="calculation_date" interval="month"/>
+                <field name="statutory_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
     <!-- Base Window Action for General Statutory Report Engine -->
     <record id="action_hds_in_statutory_report_general" model="ir.actions.act_window">
         <field name="name">Statutory Compliance Reports</field>
         <field name="res_model">hds.in.statutory.report</field>
-        <field name="view_mode">kanban,list,form</field>
+        <field name="view_mode">list,kanban,pivot,graph,form</field>
+    </record>
+
+    <!-- Specific Window Action for Professional Tax Statutory Reports -->
+    <record id="action_hds_in_pt_statutory_report" model="ir.actions.act_window">
+        <field name="name">Professional Tax Statutory Reports</field>
+        <field name="res_model">hds.in.statutory.report</field>
+        <field name="view_mode">list,kanban,pivot,graph,form</field>
+        <field name="domain">[('statutory_module', '=', 'pt')]</field>
+        <field name="context">{'default_statutory_module': 'pt'}</field>
     </record>
 </odoo>

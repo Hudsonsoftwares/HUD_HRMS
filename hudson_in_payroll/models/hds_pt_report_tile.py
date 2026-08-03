@@ -43,6 +43,7 @@ class HdsPtReportTile(models.Model):
     def action_open_pt_report(self):
         self.ensure_one()
         action = self.env.ref('hudson_in_payroll.action_hds_pt_report_wizard').read()[0]
+        action['target'] = 'new'
         action['context'] = {
             'default_report_type': self.report_type,
             'default_title': self.name,

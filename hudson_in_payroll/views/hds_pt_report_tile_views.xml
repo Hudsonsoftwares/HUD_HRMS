@@ -16,8 +16,8 @@
                 <field name="report_type"/>
                 <templates>
                     <t t-name="card">
-                        <a type="object" name="action_open_pt_report"
-                           t-attf-class="oe_kanban_global_click text-decoration-none d-block p-3 rounded-3 position-relative border-0 shadow-sm transition-all h-100 #{record.featured.raw_value ? 'bg-gradient-warning-subtle text-dark border-start border-4 border-warning' : 'bg-white text-dark border-start border-4 border-info'}">
+                        <div type="object" name="action_open_pt_report"
+                             t-attf-class="oe_kanban_global_click text-decoration-none d-block p-3 rounded-3 position-relative border-0 shadow-sm transition-all h-100 #{record.featured.raw_value ? 'bg-gradient-warning-subtle text-dark border-start border-4 border-warning' : 'bg-white text-dark border-start border-4 border-info'}" style="cursor: pointer;">
                             
                             <!-- Featured / Mandatory Ribbon Badge -->
                             <t t-if="record.featured.raw_value">
@@ -51,11 +51,11 @@
                                 <span class="text-secondary small fw-medium">
                                     <i class="fa fa-university me-1 text-info"/>PT Statutory Tool
                                 </span>
-                                <span t-attf-class="btn btn-sm px-3 py-1 rounded-pill fw-bold shadow-xs #{record.featured.raw_value ? 'btn-warning text-dark' : 'btn-outline-info'}">
+                                <button type="object" name="action_open_pt_report" t-attf-class="btn btn-sm px-3 py-1 rounded-pill fw-bold shadow-xs #{record.featured.raw_value ? 'btn-warning text-dark' : 'btn-outline-info'}">
                                     Generate Report <i class="fa fa-arrow-right ms-1"/>
-                                </span>
+                                </button>
                             </div>
-                        </a>
+                        </div>
                     </t>
                 </templates>
             </kanban>
