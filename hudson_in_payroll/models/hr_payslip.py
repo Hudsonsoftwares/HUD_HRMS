@@ -4,6 +4,8 @@ from odoo.exceptions import UserError
 from ..services.epf.epf_service import EPFService
 from ..services.esic.esic_service import ESICService
 from ..services.lwf.lwf_service import LWFService
+from ..services.gratuity.gratuity_service import GratuityService
+from ..services.professional_tax.professional_tax_service import ProfessionalTaxService
 
 
 class HrPayslip(models.Model):
@@ -29,6 +31,8 @@ class HrPayslip(models.Model):
             'epf_service': EPFService(self.env, localdict=localdict),
             'esic_service': ESICService(self.env, localdict=localdict),
             'lwf_service': LWFService(self.env, localdict=localdict),
+            'gratuity_service': GratuityService(self.env, localdict=localdict),
+            'pt_service': ProfessionalTaxService(self.env, localdict=localdict),
             'payslip_record': self,
         })
         return localdict
@@ -54,6 +58,83 @@ class HrPayslip(models.Model):
             amount = 0.0
             number_of_days = 0.0
             number_of_hours = 0.0
+            total = 0.0
+            rate = 0.0
+            quantity = 0.0
+
+            def __float__(self):
+                return 0.0
+
+            def __int__(self):
+                return 0
+
+            def __bool__(self):
+                return False
+
+            def __repr__(self):
+                return "0.0"
+
+            def __str__(self):
+                return "0.0"
+
+            def __abs__(self):
+                return 0.0
+
+            def __neg__(self):
+                return 0.0
+
+            def __pos__(self):
+                return 0.0
+
+            def __add__(self, other):
+                return float(other) if isinstance(other, (int, float)) else other
+
+            def __radd__(self, other):
+                return float(other) if isinstance(other, (int, float)) else other
+
+            def __sub__(self, other):
+                return -float(other) if isinstance(other, (int, float)) else 0.0
+
+            def __rsub__(self, other):
+                return float(other) if isinstance(other, (int, float)) else 0.0
+
+            def __mul__(self, other):
+                return 0.0
+
+            def __rmul__(self, other):
+                return 0.0
+
+            def __truediv__(self, other):
+                return 0.0
+
+            def __rtruediv__(self, other):
+                return 0.0
+
+            def __eq__(self, other):
+                if isinstance(other, DummyInput):
+                    return True
+                if isinstance(other, (int, float)):
+                    return float(other) == 0.0
+                return not bool(other)
+
+            def __lt__(self, other):
+                val = float(other) if isinstance(other, (int, float)) else 0.0
+                return 0.0 < val
+
+            def __le__(self, other):
+                val = float(other) if isinstance(other, (int, float)) else 0.0
+                return 0.0 <= val
+
+            def __gt__(self, other):
+                val = float(other) if isinstance(other, (int, float)) else 0.0
+                return 0.0 > val
+
+            def __ge__(self, other):
+                val = float(other) if isinstance(other, (int, float)) else 0.0
+                return 0.0 >= val
+
+            def __getattr__(self, attr):
+                return self
 
         class BrowsableObject(object):
             def __init__(self, employee_id, dict_val, env):
@@ -174,6 +255,23 @@ class HrPayslip(models.Model):
                     localdict['result_qty'] = 1.0
                     localdict['result_rate'] = 100
 
+                    # Auto-heal legacy database TDS salary rule code if present
+                    if rule.code == 'TDS' and rule.amount_python_compute and 'categories.GROSS or categories.ALW' in rule.amount_python_compute:
+                        rule.sudo().write({
+                            'amount_python_compute': """
+bonus_line = payslip.env['hds.in.bonus.line'].search([('payslip_id', '=', payslip.id)], limit=1)
+bonus_doc = bonus_line.bonus_id if bonus_line else False
+gross_val = categories.GROSS if isinstance(categories.GROSS, (int, float)) else (categories.ALW if isinstance(categories.ALW, (int, float)) else 0.0)
+if bonus_doc and bonus_doc.tax_treatment == 'exempt':
+    result = 0.0
+elif bonus_doc and bonus_doc.tax_treatment == 'partial':
+    taxable_val = max(0.0, gross_val - (bonus_doc.tax_exempt_limit or 0.0))
+    result = - (taxable_val * 0.10)
+else:
+    result = - (gross_val * 0.10)
+"""
+                        })
+
                     if rule._satisfy_condition(localdict) and rule.id not in blacklist:
                         amount, qty, rate = rule._compute_rule(localdict)
                         previous_amount = rule.code in localdict and localdict[rule.code] or 0.0
@@ -236,11 +334,21 @@ class HrPayslip(models.Model):
         Generic DRY helper to instantiate statutory service facades with evaluation context
         and delegate computation cleanly without repeating validation logic.
         """
+        import logging
+        _logger = logging.getLogger(__name__)
         self.ensure_one()
+        _logger.warning(">>> Delegating to: %s", service_class.__name__)
         eval_ctx = self._get_payroll_eval_context(raise_if_missing=True)
+        if eval_ctx:
+            cats = eval_ctx.get('categories')
+            gross_val = cats.GROSS if cats and hasattr(cats, 'GROSS') else None
+            _logger.warning(">>> Localdict GROSS: %s", gross_val)
+
         service = service_class(self.env, localdict=eval_ctx)
         compute_fn = getattr(service, compute_method_name)
-        amount = compute_fn(self)
+        result = compute_fn(self)
+        _logger.warning(">>> PT Result Returned: %s", getattr(result, 'amount', result))
+        amount = result.amount if hasattr(result, 'amount') else result
         return -amount if negate else amount
 
     # -------------------------------------------------------------------------
@@ -315,6 +423,35 @@ class HrPayslip(models.Model):
     def hds_in_compute_lwf_employer(self):
         """Public API entrypoint for LWF_ER Salary Rule (Zero arguments)."""
         return self._delegate_statutory_service(LWFService, 'compute_lwf_employer')
+
+    # -------------------------------------------------------------------------
+    # PUBLIC GRATUITY ORCHESTRATION API FOR SALARY RULES (Zero Arguments in XML)
+    # -------------------------------------------------------------------------
+    def hds_in_compute_gratuity(self):
+        """
+        Public API entrypoint for Gratuity Salary Rule (Zero arguments in XML).
+        Delegates computation to GratuityService via _delegate_statutory_service DRY helper.
+        Thin orchestration layer containing zero business logic.
+        """
+        return self._delegate_statutory_service(GratuityService, 'compute_gratuity')
+
+    # -------------------------------------------------------------------------
+    # PUBLIC PROFESSIONAL TAX ORCHESTRATION API FOR SALARY RULES (Zero Arguments in XML)
+    # -------------------------------------------------------------------------
+    def hds_in_compute_professional_tax(self):
+        """
+        Public API entrypoint for Professional Tax (PT) Salary Rule (Zero arguments in XML).
+        Delegates computation to ProfessionalTaxService via _delegate_statutory_service DRY helper.
+        Thin orchestration layer containing zero business logic.
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.warning(">>> hds_in_compute_professional_tax() CALLED")
+        return self._delegate_statutory_service(ProfessionalTaxService, 'compute_pt_amount', negate=True)
+
+    def hds_in_compute_pt(self):
+        """Alias for hds_in_compute_professional_tax for backward compatibility."""
+        return self.hds_in_compute_professional_tax()
 
     # -------------------------------------------------------------------------
     # WAGE RESOLUTION HELPERS

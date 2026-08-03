@@ -131,10 +131,10 @@
         </field>
     </record>
 
-    <!-- Menuitem for Statutory Audit Logs under Payroll Reporting / Audit -->
+    <!-- Menuitem for Statutory Audit Logs under Operations -->
     <menuitem id="menu_hds_in_payroll_audit"
               name="Statutory Audit Logs"
               action="hds_in_payroll_audit_action"
-              parent="hr_payroll_community.menu_hr_payroll_community_root"
-              sequence="90"/>
+              parent="hudson_in_payroll.menu_hds_payroll_operations"
+              sequence="40"/>
 </odoo>

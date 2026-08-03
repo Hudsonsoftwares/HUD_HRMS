@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Single Menu Item: PF Statutory Reports Hub Dashboard -->
-    <menuitem id="menu_hds_statutory_reports_hub"
-              name="PF Statutory Reports"
-              parent="ohrms_payroll_reports.menu_payroll_reporting"
-              action="action_hds_statutory_report_hub"
-              sequence="90"/>
+    <!-- Wire Provident Fund (EPF) menu directly to PF Statutory Reports Hub Dashboard -->
+    <record id="hudson_in_payroll.menu_hds_pf_statutory_report" model="ir.ui.menu">
+        <field name="action" ref="action_hds_statutory_report_hub"/>
+    </record>
 </odoo>

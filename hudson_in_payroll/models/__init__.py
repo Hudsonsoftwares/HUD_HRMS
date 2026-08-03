@@ -10,5 +10,11 @@ from . import hr_payslip
 from . import hds_in_salary_revision
 from . import lwf_state_rate
 from . import hds_in_bonus
+from . import pt_state_slab
+from . import pt_period_schedule
+from . import hds_in_statutory_report
+from . import hds_pt_report_tile
+
+
 
 

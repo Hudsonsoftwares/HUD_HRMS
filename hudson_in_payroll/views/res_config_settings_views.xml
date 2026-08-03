@@ -106,6 +106,44 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Right Column: Gratuity -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="hds_in_gratuity_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="hds_in_enable_gratuity"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="hds_in_enable_gratuity" string="Payment of Gratuity Act" class="fw-bold"/>
+                                <div class="text-muted">
+                                    Enable Gratuity statutory compliance for this company under the Payment of Gratuity Act.
+                                </div>
+                                <div class="content-group mt8" invisible="not hds_in_enable_gratuity">
+                                    <div class="row mt8">
+                                        <label for="hds_in_gratuity_registration_no" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_gratuity_registration_no" placeholder="e.g. GR/MH/2024/00567"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Left Column: Professional Tax (PT) -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="hds_in_pt_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="hds_in_enable_professional_tax"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="hds_in_enable_professional_tax" string="Professional Tax (PT)" class="fw-bold"/>
+                                <div class="text-muted">
+                                    Determines whether the company is registered under the applicable State Professional Tax Act and liable to deduct Professional Tax.
+                                </div>
+                                <div class="content-group mt8" invisible="not hds_in_enable_professional_tax">
+                                    <div class="row mt8">
+                                        <label for="hds_in_professional_tax_registration_no" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_professional_tax_registration_no" placeholder="e.g. PTRC/MH/2026/00123"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Statutory Audit Setting Box -->
                         <div class="col-12 col-lg-6 o_setting_box" id="hds_in_statutory_audit_setting">
                             <div class="o_setting_left_pane">

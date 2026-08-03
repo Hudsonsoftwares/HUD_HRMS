@@ -70,6 +70,30 @@ class ResConfigSettings(models.TransientModel):
         string="LWF Registration Number"
     )
 
+    # Gratuity Company Configuration Related Fields
+    hds_in_enable_gratuity = fields.Boolean(
+        related='company_id.hds_in_enable_gratuity',
+        readonly=False,
+        string="Enable Gratuity"
+    )
+    hds_in_gratuity_registration_no = fields.Char(
+        related='company_id.hds_in_gratuity_registration_no',
+        readonly=False,
+        string="Gratuity Registration Number"
+    )
+
+    # Professional Tax (PT) Company Configuration Related Fields
+    hds_in_enable_professional_tax = fields.Boolean(
+        related='company_id.hds_in_enable_professional_tax',
+        readonly=False,
+        string="Enable Professional Tax"
+    )
+    hds_in_professional_tax_registration_no = fields.Char(
+        related='company_id.hds_in_professional_tax_registration_no',
+        readonly=False,
+        string="Professional Tax Registration Number"
+    )
+
     # Payroll Structure & Bonus Management Settings
     hds_in_regular_struct_id = fields.Many2one(
         related='company_id.hds_in_regular_struct_id',

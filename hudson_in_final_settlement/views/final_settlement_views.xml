@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View for Final Settlement -->
+    <record id="view_final_settlement_list" model="ir.ui.view">
+        <field name="name">final.settlement.list</field>
+        <field name="model">final.settlement</field>
+        <field name="arch" type="xml">
+            <list string="Final Settlements" decoration-info="state == 'draft'" decoration-warning="state == 'under_review'" decoration-success="state == 'approved'" decoration-muted="state == 'cancel'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="job_id"/>
+                <field name="exit_reason"/>
+                <field name="last_working_day"/>
+                <field name="settlement_date"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'under_review'" decoration-success="state in ('approved', 'paid')" decoration-muted="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View for Final Settlement -->
+    <record id="view_final_settlement_form" model="ir.ui.view">
+        <field name="name">final.settlement.form</field>
+        <field name="model">final.settlement</field>
+        <field name="arch" type="xml">
+            <form string="Final Settlement">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,under_review,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Employee Information">
+                            <field name="employee_id"/>
+                            <field name="department_id"/>
+                            <field name="job_id"/>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Exit Information">
+                            <field name="exit_reason"/>
+                            <field name="resignation_id" options="{'no_create': True}"/>
+                            <field name="last_working_day"/>
+                            <field name="settlement_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Payroll Information" name="payroll_info">
+                            <group>
+                                <field name="payslip_id"/>
+                            </group>
+                        </page>
+                        <page string="Notes &amp; Remarks" name="notes_info">
+                            <field name="notes" placeholder="Enter settlement remarks, exit details, or notes..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View for Final Settlement -->
+    <record id="view_final_settlement_search" model="ir.ui.view">
+        <field name="name">final.settlement.search</field>
+        <field name="model">final.settlement</field>
+        <field name="arch" type="xml">
+            <search string="Final Settlements">
+                <field name="name" string="Settlement / Employee" filter_domain="['|', ('name', 'ilike', self), ('employee_id', 'ilike', self)]"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="resignation_id"/>
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Under Review" name="filter_under_review" domain="[('state', '=', 'under_review')]"/>
+                <filter string="Approved" name="filter_approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Paid" name="filter_paid" domain="[('state', '=', 'paid')]"/>
+                <group>
+                    <filter string="Employee" name="group_by_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Department" name="group_by_department" context="{'group_by': 'department_id'}"/>
+                    <filter string="Exit Reason" name="group_by_exit_reason" context="{'group_by': 'exit_reason'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Company" name="group_by_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action for Final Settlement -->
+    <record id="action_final_settlement" model="ir.actions.act_window">
+        <field name="name">Final Settlements</field>
+        <field name="res_model">final.settlement</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_final_settlement_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create the first Employee Final Settlement Master Record!
+            </p>
+            <p>
+                Manage complete employee exit settlements, including gratuity, leave encashment, notice pay, and recoveries.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Items for Final Settlement under Operations -->
+    <menuitem id="menu_final_settlement_root"
+              name="Final Settlement"
+              parent="hudson_in_payroll.menu_hds_payroll_operations"
+              sequence="20"/>
+
+    <menuitem id="menu_final_settlement"
+              name="Final Settlements"
+              parent="menu_final_settlement_root"
+              action="action_final_settlement"
+              sequence="10"/>
+</odoo>

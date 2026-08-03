@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Wire Professional Tax (PT) menu directly to PT Statutory Reports Hub Dashboard -->
+    <record id="hudson_in_payroll.menu_hds_pt_statutory_report" model="ir.ui.menu">
+        <field name="action" ref="action_hds_pt_statutory_report_hub"/>
+    </record>
+</odoo>

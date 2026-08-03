@@ -9,7 +9,9 @@
             <field name="category_id" ref="hr_payroll_community.ALW"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = inputs.BONUS.amount if (inputs.BONUS and not isinstance(inputs.BONUS, (int, float))) else 0.0]]></field>
+            <field name="amount_python_compute"><![CDATA[
+result = inputs.BONUS.amount if (hasattr(inputs, 'BONUS') and hasattr(inputs.BONUS, 'amount') and isinstance(inputs.BONUS.amount, (int, float))) else 0.0
+]]></field>
             <field name="appears_on_payslip" eval="True"/>
             <field name="active" eval="True"/>
         </record>
@@ -22,7 +24,9 @@
             <field name="category_id" ref="hr_payroll_community.GROSS"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = categories.ALW]]></field>
+            <field name="amount_python_compute"><![CDATA[
+result = categories.ALW if isinstance(categories.ALW, (int, float)) else 0.0
+]]></field>
             <field name="appears_on_payslip" eval="True"/>
             <field name="active" eval="True"/>
         </record>
@@ -39,11 +43,11 @@
             <field name="amount_python_compute"><![CDATA[
 bonus_line = payslip.env['hds.in.bonus.line'].search([('payslip_id', '=', payslip.id)], limit=1)
 bonus_doc = bonus_line.bonus_id if bonus_line else False
-gross_val = categories.GROSS or categories.ALW or 0.0
+gross_val = categories.GROSS if isinstance(categories.GROSS, (int, float)) else (categories.ALW if isinstance(categories.ALW, (int, float)) else 0.0)
 if bonus_doc and bonus_doc.tax_treatment == 'exempt':
     result = 0.0
 elif bonus_doc and bonus_doc.tax_treatment == 'partial':
-    taxable_val = max(0.0, gross_val - bonus_doc.tax_exempt_limit)
+    taxable_val = max(0.0, gross_val - (bonus_doc.tax_exempt_limit or 0.0))
     result = - (taxable_val * 0.10)
 else:
     result = - (gross_val * 0.10)
@@ -60,7 +64,11 @@ else:
             <field name="category_id" ref="hr_payroll_community.NET"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[result = categories.GROSS + categories.DED]]></field>
+            <field name="amount_python_compute"><![CDATA[
+gross_val = categories.GROSS if isinstance(categories.GROSS, (int, float)) else 0.0
+ded_val = categories.DED if isinstance(categories.DED, (int, float)) else 0.0
+result = gross_val + ded_val
+]]></field>
             <field name="appears_on_payslip" eval="True"/>
             <field name="active" eval="True"/>
         </record>

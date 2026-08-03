@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Operations Parent Menu -->
+    <menuitem id="menu_hds_payroll_operations"
+              name="Operations"
+              parent="hr_payroll_community.menu_hr_payroll_community_root"
+              sequence="50"/>
+
+    <!-- Window Actions for Enterprise Statutory Reporting Framework -->
+    <record id="action_hds_in_pf_statutory_report" model="ir.actions.act_window">
+        <field name="name">Provident Fund (EPF) Audit Log</field>
+        <field name="res_model">hds.in.statutory.report</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('statutory_module', '=', 'epf')]</field>
+        <field name="context">{'default_statutory_module': 'epf', 'search_default_filter_epf': 1}</field>
+    </record>
+
+    <record id="action_hds_in_pt_statutory_report" model="ir.actions.act_window">
+        <field name="name">Professional Tax (PT) Audit Log</field>
+        <field name="res_model">hds.in.statutory.report</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('statutory_module', '=', 'pt')]</field>
+        <field name="context">{'default_statutory_module': 'pt', 'search_default_filter_pt': 1}</field>
+    </record>
+
+    <record id="action_hds_in_esic_statutory_report" model="ir.actions.act_window">
+        <field name="name">Employees' State Insurance (ESIC) Report</field>
+        <field name="res_model">hds.in.statutory.report</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('statutory_module', '=', 'esic')]</field>
+        <field name="context">{'default_statutory_module': 'esic', 'search_default_filter_esic': 1}</field>
+    </record>
+
+    <record id="action_hds_in_lwf_statutory_report" model="ir.actions.act_window">
+        <field name="name">Labour Welfare Fund (LWF) Report</field>
+        <field name="res_model">hds.in.statutory.report</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('statutory_module', '=', 'lwf')]</field>
+        <field name="context">{'default_statutory_module': 'lwf', 'search_default_filter_lwf': 1}</field>
+    </record>
+
+    <record id="action_hds_in_gratuity_statutory_report" model="ir.actions.act_window">
+        <field name="name">Gratuity Report</field>
+        <field name="res_model">hds.in.statutory.report</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('statutory_module', '=', 'gratuity')]</field>
+        <field name="context">{'default_statutory_module': 'gratuity', 'search_default_filter_gratuity': 1}</field>
+    </record>
+
+    <!-- Statutory Reports Group Header under Unified Reporting Menu -->
+    <menuitem id="menu_hds_statutory_reports"
+              name="Statutory Reports"
+              parent="ohrms_payroll_reports.menu_payroll_reporting"
+              sequence="20"/>
+
+    <!-- Statutory Report Submenus -->
+    <menuitem id="menu_hds_pf_statutory_report"
+              name="Provident Fund (EPF)"
+              parent="menu_hds_statutory_reports"
+              action="action_hds_in_pf_statutory_report"
+              sequence="10"/>
+
+    <menuitem id="menu_hds_pt_statutory_report"
+              name="Professional Tax (PT)"
+              parent="menu_hds_statutory_reports"
+              action="action_hds_pt_statutory_report_hub"
+              sequence="20"/>
+
+    <menuitem id="menu_hds_esic_statutory_report"
+              name="Employees' State Insurance (ESIC)"
+              parent="menu_hds_statutory_reports"
+              action="action_hds_in_esic_statutory_report"
+              sequence="30"/>
+
+    <menuitem id="menu_hds_lwf_statutory_report"
+              name="Labour Welfare Fund (LWF)"
+              parent="menu_hds_statutory_reports"
+              action="action_hds_in_lwf_statutory_report"
+              sequence="40"/>
+
+    <menuitem id="menu_hds_gratuity_statutory_report"
+              name="Gratuity"
+              parent="menu_hds_statutory_reports"
+              action="action_hds_in_gratuity_statutory_report"
+              sequence="50"/>
+</odoo>

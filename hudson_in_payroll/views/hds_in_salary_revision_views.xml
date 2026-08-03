@@ -154,7 +154,7 @@
     <!-- Menu Item for Salary Revisions History -->
     <menuitem id="menu_hds_in_salary_revision_history"
               name="Salary Revisions"
-              parent="hr_payroll_community.menu_hr_payroll_community_root"
+              parent="hudson_in_payroll.menu_hds_payroll_operations"
               action="action_hds_in_salary_revision_history"
-              sequence="85"/>
+              sequence="10"/>
 </odoo>

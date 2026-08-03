@@ -6,4 +6,7 @@ from . import esic
 from . import payroll
 from . import revision
 from . import lwf
+from . import gratuity
+from . import professional_tax
+
 

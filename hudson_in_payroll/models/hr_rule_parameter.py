@@ -15,6 +15,13 @@ PF_PARAMETER_MAPPING = {
     'EMPLOYER_EPF_RATE': 'hds_in_employer_epf_rate',
 }
 
+GRATUITY_PARAMETER_MAPPING = {
+    'DAYS_MULTIPLIER': 'hds_in_gratuity_days_multiplier',
+    'MONTH_DIVISOR': 'hds_in_gratuity_month_divisor',
+    'MIN_SERVICE_YEARS': 'hds_in_gratuity_min_service_years',
+    'STATUTORY_CEILING': 'hds_in_gratuity_statutory_ceiling',
+}
+
 
 class HrRuleParameter(models.Model):
     _name = 'hr.rule.parameter'

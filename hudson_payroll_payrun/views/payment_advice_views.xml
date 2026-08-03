@@ -95,7 +95,7 @@
     <menuitem id="menu_hudson_payment_advice"
               name="Payment Advices"
               action="hudson_payment_advice_action"
-              parent="hr_payroll_community.menu_hr_payroll_community_root"
-              sequence="20"/>
+              parent="hudson_in_payroll.menu_hds_payroll_operations"
+              sequence="30"/>
 
 </odoo>

@@ -206,5 +206,65 @@
             <field name="description">Government Notification S.O. 2182(E) raised average daily wage exemption limit from INR 137 to INR 176 per day w.e.f. 01-Jul-2019.</field>
         </record>
 
+        <!-- ======================================================= -->
+        <!-- STATUTORY GRATUITY RULE PARAMETERS                      -->
+        <!-- ======================================================= -->
+
+        <!-- 15. Gratuity: Days Multiplier (15 days) -->
+        <record id="hds_in_gratuity_days_multiplier" model="hr.rule.parameter">
+            <field name="name">Gratuity: Days Multiplier</field>
+            <field name="code">hds_in_gratuity_days_multiplier</field>
+            <field name="category">other</field>
+            <field name="description">Number of payable wage days per completed year of service. Statutory basis: Payment of Gratuity Act 1972 Section 4(2).</field>
+        </record>
+        <record id="hds_in_gratuity_days_multiplier_val_1" model="hr.rule.parameter.value">
+            <field name="parameter_id" ref="hds_in_gratuity_days_multiplier"/>
+            <field name="date_from">1972-09-16</field>
+            <field name="parameter_value">15</field>
+            <field name="description">Payment of Gratuity Act 1972 Section 4(2) establishing 15 days wages per completed year of service.</field>
+        </record>
+
+        <!-- 16. Gratuity: Month Divisor (26 days) -->
+        <record id="hds_in_gratuity_month_divisor" model="hr.rule.parameter">
+            <field name="name">Gratuity: Month Divisor</field>
+            <field name="code">hds_in_gratuity_month_divisor</field>
+            <field name="category">other</field>
+            <field name="description">Monthly wage divisor used for gratuity calculation. Statutory basis: Payment of Gratuity Act 1972 Section 4(2).</field>
+        </record>
+        <record id="hds_in_gratuity_month_divisor_val_1" model="hr.rule.parameter.value">
+            <field name="parameter_id" ref="hds_in_gratuity_month_divisor"/>
+            <field name="date_from">1972-09-16</field>
+            <field name="parameter_value">26</field>
+            <field name="description">Payment of Gratuity Act 1972 Section 4(2) establishing 26 working days month divisor for daily rate calculation.</field>
+        </record>
+
+        <!-- 17. Gratuity: Minimum Service Years (5 years) -->
+        <record id="hds_in_gratuity_min_service_years" model="hr.rule.parameter">
+            <field name="name">Gratuity: Minimum Service Years</field>
+            <field name="code">hds_in_gratuity_min_service_years</field>
+            <field name="category">threshold</field>
+            <field name="description">Minimum continuous service required for gratuity eligibility. Statutory basis: Payment of Gratuity Act 1972 Section 4(1).</field>
+        </record>
+        <record id="hds_in_gratuity_min_service_years_val_1" model="hr.rule.parameter.value">
+            <field name="parameter_id" ref="hds_in_gratuity_min_service_years"/>
+            <field name="date_from">1972-09-16</field>
+            <field name="parameter_value">5</field>
+            <field name="description">Payment of Gratuity Act 1972 Section 4(1) establishing 5 years minimum continuous service threshold.</field>
+        </record>
+
+        <!-- 18. Gratuity: Statutory Ceiling (INR 2,000,000) -->
+        <record id="hds_in_gratuity_statutory_ceiling" model="hr.rule.parameter">
+            <field name="name">Gratuity: Statutory Ceiling</field>
+            <field name="code">hds_in_gratuity_statutory_ceiling</field>
+            <field name="category">ceiling</field>
+            <field name="description">Maximum gratuity amount payable under the statute. Statutory basis: Payment of Gratuity Act 1972 Section 4(3) Amendment.</field>
+        </record>
+        <record id="hds_in_gratuity_statutory_ceiling_val_1" model="hr.rule.parameter.value">
+            <field name="parameter_id" ref="hds_in_gratuity_statutory_ceiling"/>
+            <field name="date_from">2018-03-29</field>
+            <field name="parameter_value">2000000</field>
+            <field name="description">Government Notification S.O. 1420(E) effective 29-Mar-2018 establishing statutory gratuity ceiling limit of INR 20 Lakhs (2,000,000).</field>
+        </record>
+
     </data>
 </odoo>

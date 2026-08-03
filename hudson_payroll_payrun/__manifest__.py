@@ -10,6 +10,7 @@
     'depends': [
         'hr',
         'hr_payroll_community',
+        'hudson_in_payroll',
     ],
     'data': [
         'security/ir.model.access.csv',

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Gratuity Statutory Allowance Rule -->
+        <record id="hds_in_rule_gratuity" model="hr.salary.rule">
+            <field name="name">Gratuity</field>
+            <field name="code">GRATUITY</field>
+            <field name="sequence" eval="85"/>
+            <field name="category_id" ref="hr_payroll_community.ALW"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_gratuity() if payslip_record else payslip.hds_in_compute_gratuity()]]></field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Final Settlement Salary Structure -->
+        <record id="hds_in_structure_final_settlement" model="hr.payroll.structure">
+            <field name="name">Final Settlement Payroll</field>
+            <field name="code">FINAL_SETTLEMENT_STRUCT</field>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('hr_payroll_community.hr_rule_basic'),
+                ref('hr_payroll_community.hr_rule_hra'),
+                ref('hds_in_rule_gratuity'),
+                ref('hr_payroll_community.hr_rule_taxable'),
+                ref('hds_in_rule_epf'),
+                ref('hds_in_rule_esic_ee'),
+                ref('hds_in_rule_lwf_ee'),
+                ref('hr_payroll_community.hr_rule_net')
+            ])]"/>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+    </data>
+</odoo>
