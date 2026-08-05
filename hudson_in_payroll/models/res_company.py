@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+import re
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class ResCompany(models.Model):
@@ -83,6 +85,32 @@ class ResCompany(models.Model):
         help="Stores the company's Professional Tax Registration Number (PTRC/PTEC or equivalent, depending on the state)."
     )
 
+    # Tax Deducted at Source (TDS) Company Configuration Fields
+    hds_in_tds_applicable = fields.Boolean(
+        string="Enable TDS",
+        default=False,
+        help="Master switch to enable or disable Tax Deducted at Source (TDS) for the company. When disabled, TDS services skip all tax calculations."
+    )
+    hds_in_tan = fields.Char(
+        string="TAN",
+        size=10,
+        help="Tax Deduction and Collection Account Number allotted by the Income Tax Department (10 characters, e.g. ABCD12345E)."
+    )
+    hds_in_default_tax_regime = fields.Selection(
+        selection=[
+            ('new', 'New Regime'),
+            ('old', 'Old Regime'),
+        ],
+        string="Default Tax Regime",
+        default='new',
+        help="Determines the default tax regime assigned to newly created employees."
+    )
+    hds_in_default_tax_year = fields.Many2one(
+        'tds.financial.year',
+        string="Default Tax Year",
+        help="Stores the company's active/default tax year for TDS calculations."
+    )
+
     # Payroll & Bonus Management Configuration Fields
     hds_in_regular_struct_id = fields.Many2one(
         'hr.payroll.structure',
@@ -115,6 +143,44 @@ class ResCompany(models.Model):
         help="If checked, Professional Tax (PT) rule applies to Bonus Payroll."
     )
 
+    @api.constrains('hds_in_tds_applicable', 'hds_in_tan', 'hds_in_default_tax_regime')
+    def _check_hds_in_tds_configuration(self):
+        """
+        Validates company TDS configuration when TDS is enabled.
+        Enforces mandatory TAN presence and standard Indian TAN regex format.
+        """
+        tan_pattern = re.compile(r'^[A-Z]{4}[0-9]{5}[A-Z]{1}$')
+        for company in self:
+            if company.hds_in_tds_applicable:
+                tan = (company.hds_in_tan or '').strip().upper()
+                if not tan:
+                    raise ValidationError(_(
+                        "TAN (Tax Deduction and Collection Account Number) is mandatory when TDS is enabled for company '%s'."
+                    ) % company.name)
+
+                if not tan_pattern.match(tan):
+                    raise ValidationError(_(
+                        "Invalid TAN format '%s' for company '%s'. TAN must be 10 characters long with 4 uppercase letters, 5 digits, and 1 letter (e.g. ABCD12345E)."
+                    ) % (company.hds_in_tan, company.name))
+
+                if not company.hds_in_default_tax_regime:
+                    raise ValidationError(_(
+                        "Default Tax Regime is mandatory when TDS is enabled for company '%s'."
+                    ) % company.name)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('hds_in_tan'):
+                vals['hds_in_tan'] = vals['hds_in_tan'].strip().upper()
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get('hds_in_tan'):
+            vals['hds_in_tan'] = vals['hds_in_tan'].strip().upper()
+        return super().write(vals)
+
+
     def _register_hook(self):
         """
         Execute DDL column creation during model registration hook.
@@ -137,6 +203,10 @@ class ResCompany(models.Model):
                 ADD COLUMN IF NOT EXISTS hds_in_gratuity_registration_no varchar,
                 ADD COLUMN IF NOT EXISTS hds_in_enable_professional_tax boolean DEFAULT false,
                 ADD COLUMN IF NOT EXISTS hds_in_professional_tax_registration_no varchar,
+                ADD COLUMN IF NOT EXISTS hds_in_tds_applicable boolean DEFAULT false,
+                ADD COLUMN IF NOT EXISTS hds_in_tan varchar,
+                ADD COLUMN IF NOT EXISTS hds_in_default_tax_regime varchar DEFAULT 'new',
+                ADD COLUMN IF NOT EXISTS hds_in_default_tax_year integer,
                 ADD COLUMN IF NOT EXISTS hds_in_regular_struct_id integer,
                 ADD COLUMN IF NOT EXISTS hds_in_bonus_struct_id integer,
                 ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_tds boolean DEFAULT true,
@@ -149,7 +219,7 @@ class ResCompany(models.Model):
 
     def _auto_init(self):
         """
-        Pre-emptively ensure ESIC, LWF, Gratuity, PT and Bonus columns exist in PostgreSQL res_company table.
+        Pre-emptively ensure ESIC, LWF, Gratuity, PT, TDS, and Bonus columns exist in PostgreSQL res_company table.
         """
         cr = self.env.cr
         cr.execute("""
@@ -165,6 +235,10 @@ class ResCompany(models.Model):
             ADD COLUMN IF NOT EXISTS hds_in_gratuity_registration_no varchar,
             ADD COLUMN IF NOT EXISTS hds_in_enable_professional_tax boolean DEFAULT false,
             ADD COLUMN IF NOT EXISTS hds_in_professional_tax_registration_no varchar,
+            ADD COLUMN IF NOT EXISTS hds_in_tds_applicable boolean DEFAULT false,
+            ADD COLUMN IF NOT EXISTS hds_in_tan varchar,
+            ADD COLUMN IF NOT EXISTS hds_in_default_tax_regime varchar DEFAULT 'new',
+            ADD COLUMN IF NOT EXISTS hds_in_default_tax_year integer,
             ADD COLUMN IF NOT EXISTS hds_in_regular_struct_id integer,
             ADD COLUMN IF NOT EXISTS hds_in_bonus_struct_id integer,
             ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_tds boolean DEFAULT true,
@@ -173,4 +247,5 @@ class ResCompany(models.Model):
             ADD COLUMN IF NOT EXISTS hds_in_bonus_apply_pt boolean DEFAULT false;
         """)
         return super(ResCompany, self)._auto_init()
+
 

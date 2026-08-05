@@ -1,11 +1,15 @@
-# -*- coding: utf-8 -*-
+import logging
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 from odoo.exceptions import UserError
 from ..services.epf.epf_service import EPFService
 from ..services.esic.esic_service import ESICService
 from ..services.lwf.lwf_service import LWFService
 from ..services.gratuity.gratuity_service import GratuityService
 from ..services.professional_tax.professional_tax_service import ProfessionalTaxService
+from ..services.tds.tds_orchestration_engine import TdsOrchestrationEngine
+
+_logger = logging.getLogger(__name__)
 
 
 class HrPayslip(models.Model):
@@ -33,9 +37,26 @@ class HrPayslip(models.Model):
             'lwf_service': LWFService(self.env, localdict=localdict),
             'gratuity_service': GratuityService(self.env, localdict=localdict),
             'pt_service': ProfessionalTaxService(self.env, localdict=localdict),
+            'tds_orchestration_engine': TdsOrchestrationEngine(self.env),
             'payslip_record': self,
         })
         return localdict
+
+    def hds_in_compute_tds(self):
+        """
+        Payslip statutory method called by salary rule HDS_IN_TDS.
+        Invokes TdsOrchestrationEngine master entry point and returns monthly TDS deduction.
+        """
+        self.ensure_one()
+        _logger.warning("=" * 80)
+        _logger.warning("TDS ENGINE STARTED FOR PAYSLIP: %s (Employee: %s)", self.name, self.employee_id.name)
+        _logger.warning("=" * 80)
+        engine = TdsOrchestrationEngine(self.env)
+        res = engine.hds_in_compute_tds(self.employee_id, eval_date=self.date_to or fields.Date.today())
+        _logger.warning("HDS_IN_TDS TRACE | Inside HrPayslip.hds_in_compute_tds() | total_annual_tax_liability: %s, returning res.current_month_tds: %s", getattr(getattr(res, 'health_education_cess', None), 'total_annual_tax_liability', 'N/A'), res.current_month_tds)
+        return -res.current_month_tds
+
+
 
     # -------------------------------------------------------------------------
     # OVERRIDDEN GET_PAYSLIP_LINES
@@ -274,11 +295,19 @@ else:
 
                     if rule._satisfy_condition(localdict) and rule.id not in blacklist:
                         amount, qty, rate = rule._compute_rule(localdict)
+
+                        if rule.code in ('HDS_IN_TDS', 'TDS'):
+                            _logger.warning("HDS_IN_TDS TRACE | Stage 3: Immediately after rule._compute_rule() | Rule Code: %s | amount: %s | qty: %s | rate: %s | tot_rule: %s", rule.code, amount, qty, rate, (amount * qty * rate / 100.0))
+
                         previous_amount = rule.code in localdict and localdict[rule.code] or 0.0
                         tot_rule = (amount * qty * rate / 100.0)
                         localdict[rule.code] = tot_rule
                         rules_dict[rule.code] = rule
                         localdict = _sum_salary_rule_category(localdict, rule.category_id, tot_rule - previous_amount)
+
+                        if rule.code in ('HDS_IN_TDS', 'TDS'):
+                            _logger.warning("HDS_IN_TDS TRACE | Stage 4: Immediately before creating hr.payslip.line dict | Rule Code: %s | amount: %s | qty: %s | rate: %s", rule.code, amount, qty, rate)
+
                         result_dict[key] = {
                             'salary_rule_id': rule.id,
                             'contract_id': contract.id,
@@ -303,6 +332,9 @@ else:
                             'quantity': qty,
                             'rate': rate,
                         }
+
+                        if rule.code in ('HDS_IN_TDS', 'TDS'):
+                            _logger.warning("HDS_IN_TDS TRACE | Stage 5: Immediately after payslip line appended | Key: %s | line_dict: %s", key, result_dict[key])
                     else:
                         blacklist += [id for id, seq in rule._recursive_search_of_rules()]
         finally:

@@ -213,8 +213,18 @@ class HrSalaryRule(models.Model):
                             rec.name, rec.code))
             else:
                 try:
+                    if rec.code in ('HDS_IN_TDS', 'TDS'):
+                        _logger.warning("HDS_IN_TDS TRACE | Stage 1: Before safe_eval() | Rule Code: %s, amount_select: %s, python_compute: %s", rec.code, rec.amount_select, rec.amount_python_compute)
 
                     safe_eval(rec.amount_python_compute, localdict, mode='exec')
+
+                    res_val = localdict.get('result')
+                    res_qty = localdict.get('result_qty', 1.0)
+                    res_rate = localdict.get('result_rate', 100.0)
+
+                    if rec.code in ('HDS_IN_TDS', 'TDS'):
+                        _logger.warning("HDS_IN_TDS TRACE | Stage 2: Immediately after safe_eval() | Rule Code: %s | localdict['result']: %s | amount: %s | qty: %s | rate: %s", rec.code, res_val, res_val, res_qty, res_rate)
+
                     return (float(localdict['result']),
                             'result_qty' in localdict and
                             localdict['result_qty'] or 1.0, 'result_rate'

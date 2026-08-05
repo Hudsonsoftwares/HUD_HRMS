@@ -228,3 +228,646 @@ class HrEmployee(models.Model):
             'domain': [('employee_id', '=', self.id)],
             'context': {'default_employee_id': self.id},
         }
+
+    # =========================================================================
+    # INCOME TAX (TDS) PROFILE FIELDS
+    # =========================================================================
+    hds_in_pan = fields.Char(
+        string="PAN Number",
+        help="10-character Permanent Account Number (e.g. ABCDE1234F)."
+    )
+    hds_in_aadhaar = fields.Char(
+        string="Aadhaar Number",
+        help="12-digit Aadhaar Card Number."
+    )
+    hds_in_tds_applicable = fields.Boolean(
+        string="TDS Applicable",
+        default=True,
+        help="Enable Indian Income Tax (TDS) withholding computation for this employee."
+    )
+    hds_in_residential_status = fields.Selection([
+        ('ror', 'Resident & Ordinarily Resident (ROR)'),
+        ('rnor', 'Resident but Not Ordinarily Resident (RNOR)'),
+        ('nre', 'Non-Resident Indian (NRI)'),
+    ], string="Residential Status", default='ror', required=True, help="Income Tax Act residential compliance status.")
+
+    # Previous Employer Income & TDS (For Mid-Year Joiners)
+    hds_in_prev_taxable_gross = fields.Monetary(
+        string="Previous Employer Taxable Salary (₹)",
+        currency_field='currency_id',
+        default=0.0,
+        help="Gross taxable salary earned from previous employer during current financial year."
+    )
+    hds_in_prev_tds_deducted = fields.Monetary(
+        string="Previous Employer TDS Deducted (₹)",
+        currency_field='currency_id',
+        default=0.0,
+        help="Total TDS tax deducted by previous employer during current financial year."
+    )
+    hds_in_prev_pt_deducted = fields.Monetary(
+        string="Previous Employer PT Deducted (₹)",
+        currency_field='currency_id',
+        default=0.0,
+        help="Professional Tax deducted by previous employer during current financial year."
+    )
+    hds_in_prev_employer_pf = fields.Monetary(
+        string="Previous Employer EPF (₹)",
+        currency_field='currency_id',
+        default=0.0,
+        help="Employer EPF contribution at previous employer during current financial year."
+    )
+    hds_in_prev_employer_nps = fields.Monetary(
+        string="Previous Employer NPS (₹)",
+        currency_field='currency_id',
+        default=0.0,
+        help="Employer NPS contribution at previous employer during current financial year."
+    )
+
+    # Tax Regime History One2many
+    hds_in_tax_regime_history_ids = fields.One2many(
+        'tds.employee.tax.regime',
+        'employee_id',
+        string="Tax Regime History",
+        help="Financial Year specific Tax Regime selections for this employee."
+    )
+
+    @api.constrains('hds_in_pan')
+    def _check_hds_in_pan_format(self):
+        pan_regex = re.compile(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$')
+        for emp in self:
+            if emp.hds_in_pan:
+                pan_clean = emp.hds_in_pan.strip().upper()
+                if not pan_regex.match(pan_clean):
+                    raise ValidationError(_(
+                        "Invalid PAN Number format: '%s'. "
+                        "PAN must be exactly 10 characters formatted as 5 uppercase letters, 4 digits, and 1 uppercase letter (e.g. ABCDE1234F)."
+                    ) % emp.hds_in_pan)
+                duplicate = self.search([
+                    ('id', '!=', emp.id),
+                    ('hds_in_pan', '=', pan_clean)
+                ], limit=1)
+                if duplicate:
+                    raise ValidationError(_(
+                        "PAN Number '%s' is already registered for employee '%s'. Duplicate PAN numbers are prohibited."
+                    ) % (pan_clean, duplicate.name))
+
+    @api.constrains('hds_in_aadhaar')
+    def _check_hds_in_aadhaar_format(self):
+        for emp in self:
+            if emp.hds_in_aadhaar:
+                aadhaar_clean = emp.hds_in_aadhaar.strip()
+                if not aadhaar_clean.isdigit() or len(aadhaar_clean) != 12:
+                    raise ValidationError(_(
+                        "Invalid Aadhaar Number: '%s'. Aadhaar must contain exactly 12 digits."
+                    ) % emp.hds_in_aadhaar)
+
+    hds_in_tax_regime_count = fields.Integer(
+        string="Tax Regime Selections Count",
+        compute='_compute_hds_in_tax_regime_count'
+    )
+
+    hds_in_current_fy_id = fields.Many2one(
+        'tds.financial.year',
+        string="Financial Year",
+        compute='_compute_current_fy_regime',
+        store=False,
+        help="Automatically resolved active Financial Year for current date."
+    )
+    hds_in_current_tax_regime_id = fields.Many2one(
+        'tds.tax.regime',
+        string="Selected Tax Regime",
+        compute='_compute_current_fy_regime',
+        inverse='_inverse_current_tax_regime',
+        store=False,
+        help="Employee selected Tax Regime for the current Financial Year."
+    )
+    hds_in_is_new_tax_regime = fields.Boolean(
+        string="Is New Tax Regime",
+        compute='_compute_current_fy_regime',
+        store=False,
+        help="Boolean indicator true if employee has selected New Tax Regime for current FY."
+    )
+
+    def _compute_current_fy_regime(self):
+        today = fields.Date.today()
+        default_fy_fallback = self.env['tds.financial.year'].search([
+            ('start_date', '<=', today),
+            ('end_date', '>=', today),
+            ('active', '=', True),
+            ('is_closed', '=', False)
+        ], limit=1)
+
+        for emp in self:
+            company = emp.company_id or self.env.company
+            fy = company.hds_in_default_tax_year or default_fy_fallback
+            emp.hds_in_current_fy_id = fy
+            if fy and emp.id:
+                rec = self.env['tds.employee.tax.regime'].search([
+                    ('employee_id', '=', emp.id),
+                    ('financial_year_id', '=', fy.id)
+                ], limit=1)
+                reg_id = rec.regime_id if rec else False
+                emp.hds_in_current_tax_regime_id = reg_id
+                emp.hds_in_is_new_tax_regime = (reg_id.code == 'new') if reg_id else False
+            else:
+                emp.hds_in_current_tax_regime_id = False
+                emp.hds_in_is_new_tax_regime = False
+
+    def _inverse_current_tax_regime(self):
+        today = fields.Date.today()
+        default_fy_fallback = self.env['tds.financial.year'].search([
+            ('start_date', '<=', today),
+            ('end_date', '>=', today),
+            ('active', '=', True),
+            ('is_closed', '=', False)
+        ], limit=1)
+
+        for emp in self:
+            company = emp.company_id or self.env.company
+            fy = company.hds_in_default_tax_year or default_fy_fallback
+            if not fy:
+                raise ValidationError(_("No active Financial Year configuration exists. Please configure Default Tax Year under Payroll Settings or generate the active Financial Year using the Roll-Over Wizard."))
+
+            if emp.hds_in_current_tax_regime_id and emp.id:
+                rec = self.env['tds.employee.tax.regime'].search([
+                    ('employee_id', '=', emp.id),
+                    ('financial_year_id', '=', fy.id)
+                ], limit=1)
+                if rec:
+                    rec.write({'regime_id': emp.hds_in_current_tax_regime_id.id})
+                else:
+                    self.env['tds.employee.tax.regime'].create({
+                        'employee_id': emp.id,
+                        'financial_year_id': fy.id,
+                        'regime_id': emp.hds_in_current_tax_regime_id.id,
+                    })
+
+
+    # Section 3: Income Declaration Helper Fields (Mapped to tds.employee.income.declaration)
+    hds_in_savings_bank_interest = fields.Monetary(
+        string="Savings Account Interest (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False,
+        help="Annual interest earned on savings bank accounts."
+    )
+    hds_in_fixed_deposit_interest = fields.Monetary(
+        string="Fixed Deposit Interest (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False,
+        help="Annual interest earned on term deposits."
+    )
+    hds_in_dividend_income = fields.Monetary(
+        string="Dividend Income (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False,
+        help="Annual taxable dividend income."
+    )
+    hds_in_other_sources_income = fields.Monetary(
+        string="Other Miscellaneous Income (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False,
+        help="Other taxable income."
+    )
+    hds_in_total_other_sources_income = fields.Monetary(
+        string="Total Other Sources Income (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        store=False
+    )
+    hds_in_annual_let_out_rent = fields.Monetary(
+        string="Gross Annual Rent (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False
+    )
+    hds_in_municipal_taxes_paid = fields.Monetary(
+        string="Municipal Taxes Paid (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False
+    )
+    hds_in_let_out_interest_paid = fields.Monetary(
+        string="Housing Loan Interest (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False
+    )
+    hds_in_net_house_property_income_loss = fields.Monetary(
+        string="Net Property Income / Loss (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_income_decl',
+        store=False
+    )
+
+    def _compute_current_income_decl(self):
+
+        today = fields.Date.today()
+        fy = self.env['tds.financial.year'].search([
+            ('start_date', '<=', today),
+            ('end_date', '>=', today),
+            ('active', '=', True),
+            ('is_closed', '=', False)
+        ], limit=1)
+
+        for emp in self:
+            if fy and emp.id:
+                decl = self.env['tds.employee.income.declaration'].search([
+                    ('employee_id', '=', emp.id),
+                    ('financial_year_id', '=', fy.id)
+                ], limit=1)
+                if decl:
+                    emp.hds_in_savings_bank_interest = decl.savings_bank_interest
+                    emp.hds_in_fixed_deposit_interest = decl.fixed_deposit_interest
+                    emp.hds_in_dividend_income = decl.dividend_income
+                    emp.hds_in_other_sources_income = decl.other_sources_income
+                    emp.hds_in_total_other_sources_income = decl.total_other_sources_income
+                    emp.hds_in_annual_let_out_rent = decl.annual_let_out_rent
+                    emp.hds_in_municipal_taxes_paid = decl.municipal_taxes_paid
+                    emp.hds_in_let_out_interest_paid = decl.let_out_interest_paid
+                    emp.hds_in_net_house_property_income_loss = decl.net_house_property_income_loss
+                else:
+                    emp.hds_in_savings_bank_interest = 0.0
+                    emp.hds_in_fixed_deposit_interest = 0.0
+                    emp.hds_in_dividend_income = 0.0
+                    emp.hds_in_other_sources_income = 0.0
+                    emp.hds_in_total_other_sources_income = 0.0
+                    emp.hds_in_annual_let_out_rent = 0.0
+                    emp.hds_in_municipal_taxes_paid = 0.0
+                    emp.hds_in_let_out_interest_paid = 0.0
+                    emp.hds_in_net_house_property_income_loss = 0.0
+            else:
+                emp.hds_in_savings_bank_interest = 0.0
+                emp.hds_in_fixed_deposit_interest = 0.0
+                emp.hds_in_dividend_income = 0.0
+                emp.hds_in_other_sources_income = 0.0
+                emp.hds_in_total_other_sources_income = 0.0
+                emp.hds_in_annual_let_out_rent = 0.0
+                emp.hds_in_municipal_taxes_paid = 0.0
+                emp.hds_in_let_out_interest_paid = 0.0
+                emp.hds_in_net_house_property_income_loss = 0.0
+
+    def _inverse_current_income_decl(self):
+        today = fields.Date.today()
+        fy = self.env['tds.financial.year'].search([
+            ('start_date', '<=', today),
+            ('end_date', '>=', today),
+            ('active', '=', True),
+            ('is_closed', '=', False)
+        ], limit=1)
+
+        if not fy:
+            return
+
+        for emp in self:
+            if emp.id:
+                decl = self.env['tds.employee.income.declaration'].search([
+                    ('employee_id', '=', emp.id),
+                    ('financial_year_id', '=', fy.id)
+                ], limit=1)
+                vals = {
+                    'savings_bank_interest': emp.hds_in_savings_bank_interest,
+                    'fixed_deposit_interest': emp.hds_in_fixed_deposit_interest,
+                    'dividend_income': emp.hds_in_dividend_income,
+                    'other_sources_income': emp.hds_in_other_sources_income,
+                    'annual_let_out_rent': emp.hds_in_annual_let_out_rent,
+                    'municipal_taxes_paid': emp.hds_in_municipal_taxes_paid,
+                    'let_out_interest_paid': emp.hds_in_let_out_interest_paid,
+                    'prev_employer_taxable_gross': emp.hds_in_prev_taxable_gross,
+                    'prev_employer_tds': emp.hds_in_prev_tds_deducted,
+                    'prev_employer_pt': emp.hds_in_prev_pt_deducted,
+                    'prev_employer_pf': emp.hds_in_prev_employer_pf,
+                }
+                if decl:
+                    decl.write(vals)
+                else:
+                    vals.update({
+                        'employee_id': emp.id,
+                        'financial_year_id': fy.id,
+                    })
+                    self.env['tds.employee.income.declaration'].create(vals)
+
+    # -------------------------------------------------------------------------
+    # SECTION 4: DEDUCTION DECLARATION HELPER FIELDS (Old Regime Only)
+    # -------------------------------------------------------------------------
+    # Group A: Investments (Chapter VI-A / Section 80C)
+    hds_in_decl_80c_ppf = fields.Monetary(string="PPF Contribution (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_elss = fields.Monetary(string="ELSS Mutual Funds (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_epf = fields.Monetary(string="Voluntary EPF (VPF) (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_lic = fields.Monetary(string="Life Insurance Premium (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_nsc = fields.Monetary(string="National Savings Certificate (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_ssy = fields.Monetary(string="Sukanya Samriddhi Yojana (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_fd = fields.Monetary(string="Tax Saving FD (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_tuition = fields.Monetary(string="Children Tuition Fees (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_housing_principal = fields.Monetary(string="Housing Loan Principal (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_other = fields.Monetary(string="Other 80C Investments (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80c_total = fields.Monetary(string="Total Declared Section 80C (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', store=False)
+
+    # Group B: National Pension Scheme (Section 80CCD(1B))
+    hds_in_decl_80ccd1b_nps = fields.Monetary(string="Employee NPS Contribution 80CCD(1B) (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+
+    # Group C: Medical Insurance (Section 80D)
+    hds_in_decl_80d_self = fields.Monetary(string="Medical Insurance (Self/Family) (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80d_parents = fields.Monetary(string="Medical Insurance (Parents) (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80d_parents_is_senior = fields.Boolean(string="Parents are Senior Citizens (Age ≥ 60 years)", compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False, help="Check if parents are Senior Citizens (Age 60+), unlocking higher ₹50,000 Section 80D ceiling.")
+    hds_in_decl_80d_preventive = fields.Monetary(string="Preventive Health Check-up (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+
+
+    # Group D: House Rent Allowance (HRA)
+    hds_in_decl_hra_annual_rent = fields.Monetary(string="Annual Rent Paid (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_hra_landlord_name = fields.Char(string="Landlord Name", compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_hra_landlord_pan = fields.Char(string="Landlord PAN", compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_hra_is_metro = fields.Boolean(string="Accommodation in Metro City", compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+
+    # Group E: Home Loan Interest (Section 24(b))
+    hds_in_decl_24b_self_interest = fields.Monetary(string="Self-Occupied Home Loan Interest (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+
+    # Group F: Savings Interest (Section 80TTA / 80TTB)
+    hds_in_decl_80tta_interest = fields.Monetary(string="Savings Interest 80TTA (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80ttb_interest = fields.Monetary(string="Senior Citizen Interest 80TTB (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+
+    # Group G: Disability Deductions (Section 80DD)
+    hds_in_decl_80dd_amount = fields.Monetary(string="Dependent Disability 80DD (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+    hds_in_decl_80dd_is_severe = fields.Boolean(string="Severe Disability (Disability ≥ 80%)", compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False, help="Check if dependent disability is 80% or higher, unlocking ₹1,25,000 Section 80DD ceiling.")
+
+
+    # Group H: Other Eligible Deductions
+    hds_in_decl_other_amount = fields.Monetary(string="Other Eligible Deductions (₹)", currency_field='currency_id', compute='_compute_current_deduction_decl', inverse='_inverse_current_deduction_decl', store=False)
+
+    # -------------------------------------------------------------------------
+    # CATEGORY C: NEW REGIME & BOTH REGIMES SUPPORTED DEDUCTIONS
+    # -------------------------------------------------------------------------
+    hds_in_decl_80ccd2_employer_nps = fields.Monetary(
+        string="Employer NPS Contribution 80CCD(2) (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_deduction_decl',
+        inverse='_inverse_current_deduction_decl',
+        store=False,
+        help="Employer contribution under Section 80CCD(2) (up to 14%/10% of Basic + DA, permitted under BOTH Old and New Regimes)."
+    )
+    hds_in_decl_57iia_family_pension = fields.Monetary(
+        string="Family Pension Deduction 57(iia) (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_deduction_decl',
+        inverse='_inverse_current_deduction_decl',
+        store=False,
+        help="Family Pension deduction under Section 57(iia) (permitted under BOTH Old and New Regimes)."
+    )
+    hds_in_decl_80cch_agniveer = fields.Monetary(
+        string="Agniveer Corpus Fund 80CCH (₹)",
+        currency_field='currency_id',
+        compute='_compute_current_deduction_decl',
+        inverse='_inverse_current_deduction_decl',
+        store=False,
+        help="Agniveer Corpus Fund deduction under Section 80CCH (permitted under BOTH Old and New Regimes)."
+    )
+
+    # Section 6: Supporting Proof Documents
+    hds_in_tax_attachment_ids = fields.Many2many(
+        'ir.attachment',
+        'hr_employee_tax_ir_attachment_rel',
+        'employee_id',
+        'attachment_id',
+        string="Tax Supporting Proof Documents",
+        help="Upload LIC receipts, PPF statements, rent receipts, medical insurance receipts, and home loan certificates."
+    )
+
+    def _compute_current_deduction_decl(self):
+        today = fields.Date.today()
+        fy = self.env['tds.financial.year'].search([
+            ('start_date', '<=', today),
+            ('end_date', '>=', today),
+            ('active', '=', True),
+            ('is_closed', '=', False)
+        ], limit=1)
+
+        for emp in self:
+            # Default zero values
+            emp.hds_in_decl_80c_ppf = 0.0
+            emp.hds_in_decl_80c_elss = 0.0
+            emp.hds_in_decl_80c_epf = 0.0
+            emp.hds_in_decl_80c_lic = 0.0
+            emp.hds_in_decl_80c_nsc = 0.0
+            emp.hds_in_decl_80c_ssy = 0.0
+            emp.hds_in_decl_80c_fd = 0.0
+            emp.hds_in_decl_80c_tuition = 0.0
+            emp.hds_in_decl_80c_housing_principal = 0.0
+            emp.hds_in_decl_80c_other = 0.0
+            emp.hds_in_decl_80c_total = 0.0
+            emp.hds_in_decl_80ccd1b_nps = 0.0
+            emp.hds_in_decl_80d_self = 0.0
+            emp.hds_in_decl_80d_parents = 0.0
+            emp.hds_in_decl_80d_parents_is_senior = False
+            emp.hds_in_decl_80d_preventive = 0.0
+
+            emp.hds_in_decl_hra_annual_rent = 0.0
+            emp.hds_in_decl_hra_landlord_name = False
+            emp.hds_in_decl_hra_landlord_pan = False
+            emp.hds_in_decl_hra_is_metro = False
+            emp.hds_in_decl_24b_self_interest = 0.0
+            emp.hds_in_decl_80tta_interest = 0.0
+            emp.hds_in_decl_80ttb_interest = 0.0
+            emp.hds_in_decl_80dd_amount = 0.0
+            emp.hds_in_decl_80dd_is_severe = False
+            emp.hds_in_decl_other_amount = 0.0
+
+            emp.hds_in_decl_80ccd2_employer_nps = 0.0
+            emp.hds_in_decl_57iia_family_pension = 0.0
+            emp.hds_in_decl_80cch_agniveer = 0.0
+
+            if fy and emp.id:
+                decl = self.env['tds.employee.declaration'].search([
+                    ('employee_id', '=', emp.id),
+                    ('financial_year_id', '=', fy.id)
+                ], limit=1)
+                if decl:
+                    for line in decl.declaration_line_ids:
+                        cat = line.category
+                        amt = line.declared_amount
+                        desc = (line.description or '').lower()
+                        if cat == '80c':
+                            if 'ppf' in desc: emp.hds_in_decl_80c_ppf += amt
+                            elif 'elss' in desc: emp.hds_in_decl_80c_elss += amt
+                            elif 'epf' in desc or 'vpf' in desc: emp.hds_in_decl_80c_epf += amt
+                            elif 'lic' in desc or 'life' in desc: emp.hds_in_decl_80c_lic += amt
+                            elif 'nsc' in desc: emp.hds_in_decl_80c_nsc += amt
+                            elif 'sukanya' in desc or 'ssy' in desc: emp.hds_in_decl_80c_ssy += amt
+                            elif 'fd' in desc or 'fixed' in desc: emp.hds_in_decl_80c_fd += amt
+                            elif 'tuition' in desc or 'fee' in desc: emp.hds_in_decl_80c_tuition += amt
+                            elif 'housing' in desc or 'principal' in desc: emp.hds_in_decl_80c_housing_principal += amt
+                            else: emp.hds_in_decl_80c_other += amt
+                        elif cat == '80ccd1b': emp.hds_in_decl_80ccd1b_nps += amt
+                        elif cat == '80d_self': emp.hds_in_decl_80d_self += amt
+                        elif cat == '80d_parents':
+                            emp.hds_in_decl_80d_parents += amt
+                            if line.is_senior_citizen:
+                                emp.hds_in_decl_80d_parents_is_senior = True
+
+                        elif cat == '80d_preventive': emp.hds_in_decl_80d_preventive += amt
+                        elif cat == 'hra':
+                            emp.hds_in_decl_hra_annual_rent += amt
+                            if line.landlord_name: emp.hds_in_decl_hra_landlord_name = line.landlord_name
+                            if line.landlord_pan: emp.hds_in_decl_hra_landlord_pan = line.landlord_pan
+                            emp.hds_in_decl_hra_is_metro = line.is_metro
+                        elif cat == '24b': emp.hds_in_decl_24b_self_interest += amt
+                        elif cat == '80tta': emp.hds_in_decl_80tta_interest += amt
+                        elif cat == '80ttb': emp.hds_in_decl_80ttb_interest += amt
+                        elif cat == '80dd':
+                            emp.hds_in_decl_80dd_amount += amt
+                            if line.is_severe_disability:
+                                emp.hds_in_decl_80dd_is_severe = True
+
+                        elif cat == 'other': emp.hds_in_decl_other_amount += amt
+                        elif cat == '80ccd2': emp.hds_in_decl_80ccd2_employer_nps += amt
+                        elif cat == '57iia': emp.hds_in_decl_57iia_family_pension += amt
+                        elif cat == '80cch': emp.hds_in_decl_80cch_agniveer += amt
+
+                    emp.hds_in_decl_80c_total = (
+                        emp.hds_in_decl_80c_ppf + emp.hds_in_decl_80c_elss + emp.hds_in_decl_80c_epf +
+                        emp.hds_in_decl_80c_lic + emp.hds_in_decl_80c_nsc + emp.hds_in_decl_80c_ssy +
+                        emp.hds_in_decl_80c_fd + emp.hds_in_decl_80c_tuition +
+                        emp.hds_in_decl_80c_housing_principal + emp.hds_in_decl_80c_other
+                    )
+
+    def _inverse_current_deduction_decl(self):
+        today = fields.Date.today()
+        fy = self.env['tds.financial.year'].search([
+            ('start_date', '<=', today),
+            ('end_date', '>=', today),
+            ('active', '=', True),
+            ('is_closed', '=', False)
+        ], limit=1)
+
+        if not fy:
+            return
+
+
+        for emp in self:
+            if not emp.id:
+                continue
+            decl = self.env['tds.employee.declaration'].search([
+                ('employee_id', '=', emp.id),
+                ('financial_year_id', '=', fy.id)
+            ], limit=1)
+            if not decl:
+                decl = self.env['tds.employee.declaration'].create({
+                    'employee_id': emp.id,
+                    'financial_year_id': fy.id,
+                })
+
+            lines_data = []
+
+            # Category C items (Available under BOTH Regimes)
+            if emp.hds_in_decl_80ccd2_employer_nps > 0:
+                lines_data.append((0, 0, {'category': '80ccd2', 'description': 'Employer NPS Contribution 80CCD(2)', 'declared_amount': emp.hds_in_decl_80ccd2_employer_nps}))
+            if emp.hds_in_decl_57iia_family_pension > 0:
+                lines_data.append((0, 0, {'category': '57iia', 'description': 'Family Pension Deduction 57(iia)', 'declared_amount': emp.hds_in_decl_57iia_family_pension}))
+            if emp.hds_in_decl_80cch_agniveer > 0:
+                lines_data.append((0, 0, {'category': '80cch', 'description': 'Agniveer Corpus Fund 80CCH', 'declared_amount': emp.hds_in_decl_80cch_agniveer}))
+
+            # If Old Tax Regime, append Category B Old Regime items
+            if decl.regime_code != 'new' and not emp.hds_in_is_new_tax_regime:
+                c_items = [
+                    ('PPF Contribution', emp.hds_in_decl_80c_ppf),
+                    ('ELSS Mutual Funds', emp.hds_in_decl_80c_elss),
+                    ('Voluntary EPF (VPF)', emp.hds_in_decl_80c_epf),
+                    ('LIC Premium', emp.hds_in_decl_80c_lic),
+                    ('NSC Certificate', emp.hds_in_decl_80c_nsc),
+                    ('Sukanya Samriddhi Yojana', emp.hds_in_decl_80c_ssy),
+                    ('Tax Saving FD', emp.hds_in_decl_80c_fd),
+                    ('Children Tuition Fees', emp.hds_in_decl_80c_tuition),
+                    ('Housing Loan Principal Repayment', emp.hds_in_decl_80c_housing_principal),
+                    ('Other 80C Investments', emp.hds_in_decl_80c_other),
+                ]
+                for desc, val in c_items:
+                    if val > 0:
+                        lines_data.append((0, 0, {'category': '80c', 'description': desc, 'declared_amount': val}))
+
+                if emp.hds_in_decl_80ccd1b_nps > 0:
+                    lines_data.append((0, 0, {'category': '80ccd1b', 'description': 'Employee Voluntary NPS 80CCD(1B)', 'declared_amount': emp.hds_in_decl_80ccd1b_nps}))
+                if emp.hds_in_decl_80d_self > 0:
+                    lines_data.append((0, 0, {'category': '80d_self', 'description': 'Medical Insurance Self/Family', 'declared_amount': emp.hds_in_decl_80d_self}))
+                if emp.hds_in_decl_80d_parents > 0:
+                    lines_data.append((0, 0, {
+                        'category': '80d_parents',
+                        'description': 'Medical Insurance Parents',
+                        'declared_amount': emp.hds_in_decl_80d_parents,
+                        'is_senior_citizen': emp.hds_in_decl_80d_parents_is_senior,
+                    }))
+
+                if emp.hds_in_decl_80d_preventive > 0:
+                    lines_data.append((0, 0, {'category': '80d_preventive', 'description': 'Preventive Health Checkup', 'declared_amount': emp.hds_in_decl_80d_preventive}))
+
+                if emp.hds_in_decl_hra_annual_rent > 0:
+                    lines_data.append((0, 0, {
+                        'category': 'hra',
+                        'description': 'House Rent Allowance Claim',
+                        'declared_amount': emp.hds_in_decl_hra_annual_rent,
+                        'landlord_name': emp.hds_in_decl_hra_landlord_name,
+                        'landlord_pan': emp.hds_in_decl_hra_landlord_pan,
+                        'is_metro': emp.hds_in_decl_hra_is_metro,
+                    }))
+
+                if emp.hds_in_decl_24b_self_interest > 0:
+                    lines_data.append((0, 0, {'category': '24b', 'description': 'Self-Occupied Housing Loan Interest 24(b)', 'declared_amount': emp.hds_in_decl_24b_self_interest}))
+                if emp.hds_in_decl_80tta_interest > 0:
+                    lines_data.append((0, 0, {'category': '80tta', 'description': 'Savings Interest Deduction 80TTA', 'declared_amount': emp.hds_in_decl_80tta_interest}))
+                if emp.hds_in_decl_80ttb_interest > 0:
+                    lines_data.append((0, 0, {'category': '80ttb', 'description': 'Senior Citizen Deposit Interest 80TTB', 'declared_amount': emp.hds_in_decl_80ttb_interest}))
+                if emp.hds_in_decl_80dd_amount > 0:
+                    lines_data.append((0, 0, {
+                        'category': '80dd',
+                        'description': 'Dependent Disability 80DD',
+                        'declared_amount': emp.hds_in_decl_80dd_amount,
+                        'is_severe_disability': emp.hds_in_decl_80dd_is_severe,
+                    }))
+
+                if emp.hds_in_decl_other_amount > 0:
+                    lines_data.append((0, 0, {'category': 'other', 'description': 'Other Statutory Deduction', 'declared_amount': emp.hds_in_decl_other_amount}))
+
+            # Reset old lines and update declaration
+            decl.declaration_line_ids.unlink()
+            if lines_data:
+                decl.write({'declaration_line_ids': lines_data})
+            decl.action_validate_declaration_rules()
+
+
+
+    def _compute_hds_in_tax_regime_count(self):
+        for emp in self:
+            emp.hds_in_tax_regime_count = self.env['tds.employee.tax.regime'].search_count([
+                ('employee_id', '=', emp.id)
+            ])
+
+    def action_view_tax_regimes(self):
+
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Financial Year Tax Selections'),
+            'res_model': 'tds.employee.tax.regime',
+            'view_mode': 'list,form',
+            'domain': [('employee_id', '=', self.id)],
+            'context': {'default_employee_id': self.id},
+        }
+
+    def action_view_home_loans(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Housing Loan & Section 80EEA Eligibility'),
+            'res_model': 'tds.employee.home.loan',
+            'view_mode': 'list,form',
+            'domain': [('employee_id', '=', self.id)],
+            'context': {'default_employee_id': self.id},
+        }

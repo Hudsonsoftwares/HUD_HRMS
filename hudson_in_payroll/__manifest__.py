@@ -10,6 +10,8 @@
         'hr_payroll_community',
         'ohrms_payroll_reports',
     ],
+
+
     'data': [
         'security/ir.model.access.csv',
         'security/hds_in_bonus_security.xml',
@@ -27,11 +29,23 @@
         'data/hr_salary_rules.xml',
         'data/hr_bonus_payroll_data.xml',
         'data/hds_pt_report_tiles.xml',
+        'data/tds_financial_year_data.xml',
+        'data/tds_tax_regime_data.xml',
+        'data/tds_tax_slab_data.xml',
+        'data/tds_surcharge_data.xml',
+        'data/tds_rule_parameters.xml',
         'views/hds_in_statutory_report_views.xml',
         'views/hds_pt_report_wizard_views.xml',
         'views/hds_pt_report_tile_views.xml',
         'views/payroll_menu_views.xml',
         'views/res_config_settings_views.xml',
+        'wizard/tds_financial_year_wizard_views.xml',
+        'views/tds_configuration_views.xml',
+        'views/tds_declaration_views.xml',
+
+
+
+
         'views/hr_rule_parameter_views.xml',
         'views/lwf_state_rate_views.xml',
         'views/pt_state_slab_views.xml',
@@ -43,9 +57,10 @@
         'views/hds_in_payroll_audit_views.xml',
         'wizard/hds_in_salary_revision_wizard_views.xml',
         'views/hds_in_salary_revision_views.xml',
-        'views/hds_in_bonus_views.xml',
         'wizard/hds_in_bonus_import_wizard_views.xml',
     ],
+
+
     'installable': True,
     'application': False,
     'license': 'LGPL-3',

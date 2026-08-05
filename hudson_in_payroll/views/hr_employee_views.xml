@@ -14,7 +14,14 @@
                         invisible="hds_in_statutory_audit_count == 0">
                     <field name="hds_in_statutory_audit_count" widget="statinfo" string="Statutory Audits"/>
                 </button>
+                <button name="action_view_tax_regimes"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-calculator">
+                    <field name="hds_in_tax_regime_count" widget="statinfo" string="Tax Regimes"/>
+                </button>
             </xpath>
+
 
             <!-- Position Employer Cost fields in Left Column (Contract Overview) right below Pay by Attendance -->
             <xpath expr="//field[@name='pay_by_attendance']" position="after">
@@ -101,6 +108,189 @@
                 <group string="Disability &amp; Special Status" name="group_disability_status">
                     <field name="hds_in_is_pwd"/>
                 </group>
+            </xpath>
+
+            <!-- ======================================================= -->
+            <!-- 3. INDIAN INCOME TAX (TDS) PROFILE NOTEBOOK PAGE       -->
+            <!-- ======================================================= -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Income Tax (TDS)" name="income_tax_tds_profile">
+                    
+                    <!-- Section 1: Employee Tax Profile -->
+                    <separator string="Section 1: Employee Tax Profile"/>
+                    <group>
+                        <group string="Permanent Tax Master Information">
+                            <field name="hds_in_pan" placeholder="e.g. ABCDE1234F"/>
+                            <field name="hds_in_aadhaar" placeholder="e.g. 123456789012"/>
+                        </group>
+                        <group string="Tax Compliance Setup">
+                            <field name="hds_in_tds_applicable"/>
+                            <field name="hds_in_residential_status"/>
+                        </group>
+                    </group>
+
+                    <!-- Section 2: Financial Year Tax Selection -->
+                    <separator string="Section 2: Financial Year Tax Selection"/>
+                    <group>
+                        <field name="hds_in_is_new_tax_regime" invisible="1"/>
+                        <field name="hds_in_current_fy_id" readonly="1" options="{'no_open': True}"/>
+                        <field name="hds_in_current_tax_regime_id" widget="radio" options="{'horizontal': true}"/>
+                    </group>
+
+                    <!-- Section 3: Income Declaration (Regime Neutral) -->
+                    <separator string="Section 3: Income Declaration (Regime Neutral)"/>
+                    <notebook name="income_declaration_subnotebook">
+                        <page string="Income from Other Sources" name="sec3_other_sources">
+                            <group>
+                                <group string="Interest &amp; Dividends">
+                                    <field name="hds_in_savings_bank_interest"/>
+                                    <field name="hds_in_fixed_deposit_interest"/>
+                                    <field name="hds_in_dividend_income"/>
+                                </group>
+                                <group string="Miscellaneous &amp; Summary">
+                                    <field name="hds_in_other_sources_income"/>
+                                    <field name="hds_in_total_other_sources_income" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Let-Out Property Income / Loss" name="sec3_let_out_property">
+                            <group>
+                                <group string="Rental Details &amp; Tax">
+                                    <field name="hds_in_annual_let_out_rent"/>
+                                    <field name="hds_in_municipal_taxes_paid"/>
+                                </group>
+                                <group string="Mortgage Interest &amp; Net Loss">
+                                    <field name="hds_in_let_out_interest_paid"/>
+                                    <field name="hds_in_net_house_property_income_loss" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Previous Employer Income &amp; Tax" name="sec3_prev_employer">
+                            <group>
+                                <group string="Previous Gross Salary &amp; TDS">
+                                    <field name="hds_in_prev_taxable_gross"/>
+                                    <field name="hds_in_prev_tds_deducted"/>
+                                </group>
+                                <group string="Previous Statutory Deductions">
+                                    <field name="hds_in_prev_pt_deducted"/>
+                                    <field name="hds_in_prev_employer_pf"/>
+                                    <field name="hds_in_prev_employer_nps"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+
+                    <!-- Section 4: Deduction Declaration -->
+                    <separator string="Section 4: Deduction Declaration"/>
+                    <notebook name="deduction_declaration_subnotebook">
+                        <page string="Deductions Allowed Under BOTH Regimes" name="sec4_both_regimes">
+                            <group>
+                                <group string="Employer Pension &amp; Special Statutory Deductions">
+                                    <field name="hds_in_decl_80ccd2_employer_nps"/>
+                                    <field name="hds_in_decl_57iia_family_pension"/>
+                                    <field name="hds_in_decl_80cch_agniveer"/>
+                                </group>
+                                <group string="Statutory Note">
+                                    <p class="text-muted">
+                                        These deductions are legally permitted under both Old and New Tax Regimes (Section 115BAC). Employer NPS (80CCD(2)) is separate from Employee Voluntary NPS (80CCD(1B)). Standard Deduction is calculated automatically by the TDS engine.
+                                    </p>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Investments (80C)" name="sec4_80c" invisible="hds_in_is_new_tax_regime">
+                            <group>
+                                <group string="Specified Investments &amp; Insurance">
+                                    <field name="hds_in_decl_80c_ppf"/>
+                                    <field name="hds_in_decl_80c_elss"/>
+                                    <field name="hds_in_decl_80c_epf"/>
+                                    <field name="hds_in_decl_80c_lic"/>
+                                    <field name="hds_in_decl_80c_nsc"/>
+                                </group>
+                                <group string="Deposits, Fees &amp; Housing Principal">
+                                    <field name="hds_in_decl_80c_ssy"/>
+                                    <field name="hds_in_decl_80c_fd"/>
+                                    <field name="hds_in_decl_80c_tuition"/>
+                                    <field name="hds_in_decl_80c_housing_principal"/>
+                                    <field name="hds_in_decl_80c_other"/>
+                                    <field name="hds_in_decl_80c_total" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Employee NPS (80CCD(1B))" name="sec4_80ccd1b" invisible="hds_in_is_new_tax_regime">
+                            <group string="National Pension Scheme (Employee Voluntary)">
+                                <field name="hds_in_decl_80ccd1b_nps"/>
+                            </group>
+                        </page>
+                        <page string="Medical Insurance (80D)" name="sec4_80d" invisible="hds_in_is_new_tax_regime">
+                            <group>
+                                <group string="Insurance Premiums">
+                                    <field name="hds_in_decl_80d_self"/>
+                                    <field name="hds_in_decl_80d_parents"/>
+                                    <field name="hds_in_decl_80d_parents_is_senior"/>
+                                </group>
+                                <group string="Preventive Health">
+                                    <field name="hds_in_decl_80d_preventive"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="House Rent Allowance (HRA)" name="sec4_hra" invisible="hds_in_is_new_tax_regime">
+                            <group>
+                                <group string="Rent &amp; Accommodation">
+                                    <field name="hds_in_decl_hra_annual_rent"/>
+                                    <field name="hds_in_decl_hra_is_metro"/>
+                                </group>
+                                <group string="Landlord Identity">
+                                    <field name="hds_in_decl_hra_landlord_name"/>
+                                    <field name="hds_in_decl_hra_landlord_pan"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Home Loan Interest (24b)" name="sec4_24b" invisible="hds_in_is_new_tax_regime">
+                            <group string="Mortgage Interest">
+                                <field name="hds_in_decl_24b_self_interest"/>
+                            </group>
+                        </page>
+                        <page string="Savings Interest (80TTA/80TTB)" name="sec4_savings" invisible="hds_in_is_new_tax_regime">
+                            <group>
+                                <field name="hds_in_decl_80tta_interest"/>
+                                <field name="hds_in_decl_80ttb_interest"/>
+                            </group>
+                        </page>
+                        <page string="Disability Deductions (80DD)" name="sec4_80dd" invisible="hds_in_is_new_tax_regime">
+                            <group string="Dependent Disability">
+                                <field name="hds_in_decl_80dd_amount"/>
+                                <field name="hds_in_decl_80dd_is_severe"/>
+                            </group>
+                        </page>
+
+                        <page string="Other Old Regime Deductions" name="sec4_other" invisible="hds_in_is_new_tax_regime">
+                            <group string="Statutory Deductions">
+                                <field name="hds_in_decl_other_amount"/>
+                            </group>
+                        </page>
+                    </notebook>
+
+
+                    <!-- Section 5: Eligibility-Based Declaration (Old Regime Only) -->
+                    <separator string="Section 5: Eligibility-Based Declaration (Old Regime Only)" invisible="hds_in_is_new_tax_regime"/>
+                    <group invisible="hds_in_is_new_tax_regime">
+                        <group string="Housing Loan &amp; Section 80EEA">
+                            <p class="text-muted">
+                                Eligibility-based deductions (such as Section 80EEA first-time home buyer claims) require dedicated statutory eligibility validation.
+                            </p>
+                            <button name="action_view_home_loans" string="Manage Housing Loan &amp; 80EEA Eligibility" type="object" class="btn-outline-primary" icon="fa-home"/>
+                        </group>
+                    </group>
+
+                    <!-- Section 6: Supporting Documents -->
+                    <separator string="Section 6: Supporting Documents"/>
+                    <group string="Upload Investment Receipts &amp; Statutory Proofs">
+                        <field name="hds_in_tax_attachment_ids" widget="many2many_binary"/>
+                    </group>
+
+
+                </page>
             </xpath>
         </field>
     </record>

@@ -14,6 +14,20 @@ from . import pt_state_slab
 from . import pt_period_schedule
 from . import hds_in_statutory_report
 from . import hds_pt_report_tile
+from . import tds_financial_year
+from . import tds_tax_regime
+from . import tds_tax_slab
+from . import tds_surcharge
+from . import tds_employee_home_loan
+from . import tds_employee_tax_regime
+from . import tds_employee_declaration
+from . import tds_employee_declaration_line
+from . import tds_employee_income_declaration
+
+
+
+
+
 
 
 

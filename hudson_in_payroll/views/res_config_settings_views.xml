@@ -144,6 +144,35 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Right Column: Tax Deducted at Source (TDS) -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="hds_in_tds_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="hds_in_tds_applicable"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="hds_in_tds_applicable" string="Tax Deducted at Source (TDS)" class="fw-bold"/>
+                                <div class="text-muted">
+                                    Master switch to enable or disable TDS statutory compliance and configure company TAN &amp; default tax regime preferences.
+                                </div>
+                                <div class="content-group mt8">
+                                    <div class="row mt8">
+                                        <label for="hds_in_tan" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_tan" placeholder="e.g. ABCD12345E"/>
+                                    </div>
+                                    <div class="row mt8">
+                                        <label for="hds_in_default_tax_regime" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_default_tax_regime"/>
+                                    </div>
+                                    <div class="row mt8">
+                                        <label for="hds_in_default_tax_year" class="col-lg-5 o_light_label"/>
+                                        <field name="hds_in_default_tax_year" placeholder="Select Default Tax Year"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
                         <!-- Statutory Audit Setting Box -->
                         <div class="col-12 col-lg-6 o_setting_box" id="hds_in_statutory_audit_setting">
                             <div class="o_setting_left_pane">

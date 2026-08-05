@@ -8,5 +8,7 @@ from . import revision
 from . import lwf
 from . import gratuity
 from . import professional_tax
+from . import tds
+
 
 

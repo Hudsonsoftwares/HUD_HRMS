@@ -94,6 +94,29 @@ class ResConfigSettings(models.TransientModel):
         string="Professional Tax Registration Number"
     )
 
+    # Tax Deducted at Source (TDS) Company Configuration Related Fields
+    hds_in_tds_applicable = fields.Boolean(
+        related='company_id.hds_in_tds_applicable',
+        readonly=False,
+        string="Enable TDS"
+    )
+    hds_in_tan = fields.Char(
+        related='company_id.hds_in_tan',
+        readonly=False,
+        string="TAN"
+    )
+    hds_in_default_tax_regime = fields.Selection(
+        related='company_id.hds_in_default_tax_regime',
+        readonly=False,
+        string="Default Tax Regime"
+    )
+    hds_in_default_tax_year = fields.Many2one(
+        related='company_id.hds_in_default_tax_year',
+        readonly=False,
+        string="Default Tax Year"
+    )
+
+
     # Payroll Structure & Bonus Management Settings
     hds_in_regular_struct_id = fields.Many2one(
         related='company_id.hds_in_regular_struct_id',

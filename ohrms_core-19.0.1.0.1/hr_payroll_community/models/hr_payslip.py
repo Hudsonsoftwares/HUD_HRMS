@@ -222,7 +222,16 @@ class HrPayslip(models.Model):
                                              payslip.date_from, payslip.date_to)
             lines = [(0, 0, line) for line in
                      self._get_payslip_lines(contract_ids, payslip.id)]
+
+            for l_item in lines:
+                l_dict = l_item[2] if isinstance(l_item, (tuple, list)) and len(l_item) > 2 else {}
+                if l_dict.get('code') in ('HDS_IN_TDS', 'TDS'):
+                    _logger.warning("HDS_IN_TDS TRACE | Immediately before payslip.write({'line_ids': lines}) | line_dict: %s", l_dict)
+
             payslip.write({'line_ids': lines, 'number': number})
+
+            for line in payslip.line_ids.filtered(lambda l: l.code in ('HDS_IN_TDS', 'TDS')):
+                _logger.warning("HDS_IN_TDS TRACE | Immediately after payslip.write({'line_ids': lines}) | Line Code: %s, amount: %s, quantity: %s, rate: %s, total: %s", line.code, line.amount, line.quantity, line.rate, line.total)
         return True
 
     @api.model

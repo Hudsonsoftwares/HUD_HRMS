@@ -25,6 +25,24 @@ from . import test_pt_state_slab_master
 from . import test_pt_multicompany
 from . import test_pt_regression
 from . import test_statutory_reporting_framework
+from . import test_tds_company_config
+from . import test_tds_phase2_parameters
+from . import test_tds_phase3_declarations
+from . import test_tds_phase4_annual_income_projection
+from . import test_tds_phase5_deduction_calculation
+from . import test_tds_phase6_tax_computation
+from . import test_tds_phase10_monthly_distribution
+from . import test_tds_phase11_payroll_integration
+from . import test_tds_audit_logging
+
+
+
+
+
+
+
+
+
 
 
 

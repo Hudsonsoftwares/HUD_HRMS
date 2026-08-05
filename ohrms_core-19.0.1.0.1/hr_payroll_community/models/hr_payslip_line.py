@@ -20,8 +20,11 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #
 #############################################################################
+import logging
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class HrPayslipLine(models.Model):
@@ -64,6 +67,8 @@ class HrPayslipLine(models.Model):
     def create(self, vals_list):
         """Function for change value at the time of creation"""
         for values in vals_list:
+            if values.get('code') in ('HDS_IN_TDS', 'TDS') or values.get('name') == 'Tax Deducted at Source (TDS)':
+                _logger.warning("HDS_IN_TDS TRACE | Stage 6: hr.payslip.line.create() | vals: %s", values)
             if 'employee_id' not in values or 'contract_id' not in values:
                 payslip = self.env['hr.payslip'].browse(values.get('slip_id'))
                 values['employee_id'] = values.get(
@@ -74,4 +79,8 @@ class HrPayslipLine(models.Model):
                 if not values['contract_id']:
                     raise UserError(
                         _('You must set a contract to create a payslip line.'))
-        return super(HrPayslipLine, self).create(vals_list)
+        lines = super(HrPayslipLine, self).create(vals_list)
+        for line in lines:
+            if line.code in ('HDS_IN_TDS', 'TDS'):
+                _logger.warning("HDS_IN_TDS TRACE | Stage 7: hr.payslip.line created | Code: %s, amount: %s, quantity: %s, rate: %s, total: %s", line.code, line.amount, line.quantity, line.rate, line.total)
+        return lines

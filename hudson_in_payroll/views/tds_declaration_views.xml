@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================= -->
+    <!-- 1. EMPLOYEE TAX REGIME SELECTION VIEWS                        -->
+    <!-- ============================================================= -->
+
+    <!-- Tax Regime Selection List View -->
+    <record id="tds_employee_tax_regime_view_tree" model="ir.ui.view">
+        <field name="name">tds.employee.tax.regime.tree</field>
+        <field name="model">tds.employee.tax.regime</field>
+        <field name="arch" type="xml">
+            <list string="Financial Year Tax Selections" decoration-muted="is_locked">
+                <field name="employee_id"/>
+                <field name="financial_year_id"/>
+                <field name="regime_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Tax Regime Selection Form View -->
+    <record id="tds_employee_tax_regime_view_form" model="ir.ui.view">
+        <field name="name">tds.employee.tax.regime.form</field>
+        <field name="model">tds.employee.tax.regime</field>
+        <field name="arch" type="xml">
+            <form string="Financial Year Tax Selection">
+                <header invisible="not is_locked">
+                    <button name="action_administrative_unlock" string="Admin Unlock Regime" type="object" class="btn-warning" groups="hr_payroll_community.group_hr_payroll_community_manager"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="LOCKED" bg_color="text-bg-danger" invisible="not is_locked"/>
+                    <group>
+                        <group string="Employee &amp; Financial Year">
+                            <field name="employee_id" options="{'no_create': True}"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="financial_year_id" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Tax Regime Choice">
+                            <field name="regime_id" widget="selection"/>
+                            <field name="is_locked" readonly="1" groups="hr_payroll_community.group_hr_payroll_community_manager"/>
+                            <field name="lock_reason" invisible="not is_locked" groups="hr_payroll_community.group_hr_payroll_community_manager"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- Tax Regime Selection Search View -->
+    <record id="tds_employee_tax_regime_view_search" model="ir.ui.view">
+        <field name="name">tds.employee.tax.regime.search</field>
+        <field name="model">tds.employee.tax.regime</field>
+        <field name="arch" type="xml">
+            <search string="Search Tax Regime Selections">
+                <field name="employee_id"/>
+                <field name="financial_year_id"/>
+                <field name="regime_id"/>
+                <filter string="New Tax Regime" name="filter_new_regime" domain="[('regime_code', '=', 'new')]"/>
+                <filter string="Old Tax Regime" name="filter_old_regime" domain="[('regime_code', '=', 'old')]"/>
+                <filter string="Locked Selections" name="filter_locked" domain="[('is_locked', '=', True)]"/>
+                <group>
+                    <filter string="Employee" name="group_by_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Financial Year" name="group_by_fy" context="{'group_by': 'financial_year_id'}"/>
+                    <filter string="Tax Regime" name="group_by_regime" context="{'group_by': 'regime_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Tax Regime Action -->
+    <record id="action_tds_employee_tax_regime" model="ir.actions.act_window">
+        <field name="name">Employee Tax Profile &amp; Regimes</field>
+        <field name="res_model">tds.employee.tax.regime</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="tds_employee_tax_regime_view_search"/>
+    </record>
+
+
+    <!-- ============================================================= -->
+    <!-- 2. EMPLOYEE TAX DECLARATION VIEWS                             -->
+    <!-- ============================================================= -->
+
+    <!-- Tax Declaration List View -->
+    <record id="tds_employee_declaration_view_tree" model="ir.ui.view">
+        <field name="name">tds.employee.declaration.tree</field>
+        <field name="model">tds.employee.declaration</field>
+        <field name="arch" type="xml">
+            <list string="Employee Tax Declarations" decoration-success="state == 'approved'" decoration-warning="state == 'submitted'" decoration-info="state == 'under_review'" decoration-danger="state == 'rejected'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="financial_year_id"/>
+                <field name="tax_regime_id"/>
+                <field name="total_declared_amount"/>
+                <field name="total_approved_amount"/>
+                <field name="submission_date"/>
+                <field name="approval_date"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Tax Declaration Form View -->
+    <record id="tds_employee_declaration_view_form" model="ir.ui.view">
+        <field name="name">tds.employee.declaration.form</field>
+        <field name="model">tds.employee.declaration</field>
+        <field name="arch" type="xml">
+            <form string="Employee Tax Declaration">
+                <header>
+                    <button name="action_submit" string="Submit Declaration" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_review" string="Mark Under Review" type="object" class="btn-info" groups="hr_payroll_community.group_hr_payroll_community_user" invisible="state != 'submitted'"/>
+                    <button name="action_approve" string="Approve Declaration" type="object" class="btn-success" groups="hr_payroll_community.group_hr_payroll_community_manager" invisible="state not in ['submitted', 'under_review']"/>
+                    <button name="action_reject" string="Reject" type="object" class="btn-danger" groups="hr_payroll_community.group_hr_payroll_community_manager" invisible="state not in ['submitted', 'under_review']"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" class="btn-secondary" groups="hr_payroll_community.group_hr_payroll_community_manager" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,under_review,approved,rejected"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Approved" bg_color="text-bg-success" invisible="state != 'approved'"/>
+                    <widget name="web_ribbon" title="Rejected" bg_color="text-bg-danger" invisible="state != 'rejected'"/>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Employee &amp; Tax Period">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="financial_year_id" readonly="state != 'draft'"/>
+                            <field name="tax_regime_id"/>
+                            <field name="regime_code" readonly="1"/>
+                        </group>
+                        <group string="Audit &amp; Totals">
+                            <field name="total_declared_amount" readonly="1"/>
+                            <field name="total_approved_amount" readonly="1"/>
+                            <field name="submission_date"/>
+                            <field name="approval_date"/>
+                            <field name="approved_by_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Investment Line Items" name="lines">
+                            <field name="declaration_line_ids" readonly="state in ['approved', 'rejected']">
+                                <list editable="bottom" decoration-danger="not is_regime_permitted" decoration-warning="validation_status == 'exceeds_limit'">
+                                    <field name="category"/>
+                                    <field name="section_code" readonly="1"/>
+                                    <field name="description"/>
+                                    <field name="declared_amount"/>
+                                    <field name="is_senior_citizen"/>
+                                    <field name="is_severe_disability"/>
+                                    <field name="verified_amount"/>
+                                    <field name="approved_amount"/>
+                                    <field name="is_regime_permitted" readonly="1"/>
+                                    <field name="validation_status" readonly="1"/>
+                                    <field name="validation_remarks" readonly="1"/>
+
+
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Supporting Proof Documents" name="attachments">
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                        </page>
+                        <page string="Rejection Details" name="rejection" invisible="state != 'rejected'">
+                            <group>
+                                <field name="rejection_reason"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tax Declaration Search View -->
+    <record id="tds_employee_declaration_view_search" model="ir.ui.view">
+        <field name="name">tds.employee.declaration.search</field>
+        <field name="model">tds.employee.declaration</field>
+        <field name="arch" type="xml">
+            <search string="Search Tax Declarations">
+                <field name="employee_id"/>
+                <field name="financial_year_id"/>
+                <field name="tax_regime_id"/>
+                <filter string="Draft" name="filter_draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Submitted" name="filter_submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter string="Approved" name="filter_approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Rejected" name="filter_rejected" domain="[('state', '=', 'rejected')]"/>
+                <group>
+                    <filter string="Employee" name="group_by_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Financial Year" name="group_by_fy" context="{'group_by': 'financial_year_id'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_tds_employee_declaration_all" model="ir.actions.act_window">
+        <field name="name">Employee Tax Declarations</field>
+        <field name="res_model">tds.employee.declaration</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="tds_employee_declaration_view_search"/>
+    </record>
+
+    <record id="action_tds_employee_declaration_approval" model="ir.actions.act_window">
+        <field name="name">Tax Declaration Approvals</field>
+        <field name="res_model">tds.employee.declaration</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['submitted', 'under_review'])]</field>
+        <field name="search_view_id" ref="tds_employee_declaration_view_search"/>
+    </record>
+
+    <!-- ============================================================= -->
+    <!-- 3. MODULE 2: REGIME-NEUTRAL INCOME DECLARATION VIEWS          -->
+    <!-- ============================================================= -->
+
+    <!-- Income Declaration Tree View -->
+    <record id="tds_employee_income_declaration_view_tree" model="ir.ui.view">
+        <field name="name">tds.employee.income.declaration.tree</field>
+        <field name="model">tds.employee.income.declaration</field>
+        <field name="arch" type="xml">
+            <list string="Regime-Neutral Income Declarations" decoration-success="state == 'approved'" decoration-warning="state == 'submitted'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="financial_year_id"/>
+                <field name="total_other_sources_income"/>
+                <field name="net_house_property_income_loss"/>
+                <field name="prev_employer_taxable_gross"/>
+                <field name="total_net_additional_income"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Income Declaration Form View -->
+    <record id="tds_employee_income_declaration_view_form" model="ir.ui.view">
+        <field name="name">tds.employee.income.declaration.form</field>
+        <field name="model">tds.employee.income.declaration</field>
+        <field name="arch" type="xml">
+            <form string="Non-Payroll &amp; Previous Employer Income Declaration">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-success" groups="hr_payroll_community.group_hr_payroll_community_manager" invisible="state != 'submitted'"/>
+                    <button name="action_reject" string="Reject" type="object" class="btn-danger" groups="hr_payroll_community.group_hr_payroll_community_manager" invisible="state != 'submitted'"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" class="btn-secondary" groups="hr_payroll_community.group_hr_payroll_community_manager" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Employee &amp; Financial Year">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="financial_year_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Net Summary">
+                            <field name="total_other_sources_income" readonly="1"/>
+                            <field name="net_house_property_income_loss" readonly="1"/>
+                            <field name="total_net_additional_income" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Income from Other Sources" name="other_sources">
+                            <group>
+                                <field name="savings_bank_interest"/>
+                                <field name="fixed_deposit_interest"/>
+                                <field name="dividend_income"/>
+                                <field name="other_sources_income"/>
+                            </group>
+                        </page>
+                        <page string="House Property Income / Loss (Let-Out)" name="property">
+                            <group>
+                                <group string="Gross Rent &amp; Taxes">
+                                    <field name="annual_let_out_rent"/>
+                                    <field name="municipal_taxes_paid"/>
+                                </group>
+                                <group string="Statutory NAV &amp; Deduction">
+                                    <field name="net_annual_value" readonly="1"/>
+                                    <field name="property_standard_deduction" readonly="1"/>
+                                    <field name="let_out_interest_paid"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Previous Employer Income &amp; Tax" name="prev_employer">
+                            <group>
+                                <field name="prev_employer_taxable_gross"/>
+                                <field name="prev_employer_tds"/>
+                                <field name="prev_employer_pt"/>
+                                <field name="prev_employer_pf"/>
+                            </group>
+                        </page>
+                        <page string="Proof Documents" name="proofs">
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Income Declaration Action -->
+    <record id="action_tds_employee_income_declaration" model="ir.actions.act_window">
+        <field name="name">Income Declarations (Other / Property / Prev Employer)</field>
+        <field name="res_model">tds.employee.income.declaration</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ============================================================= -->
+    <!-- 4. PHASE 3 PAYROLL OPERATIONAL MENUS                          -->
+    <!-- ============================================================= -->
+
+    <!-- Payroll -> Tax Declarations Root -->
+    <menuitem id="menu_tds_tax_declarations_root"
+              name="Tax Declarations"
+              parent="hr_payroll_community.menu_hr_payroll_community_root"
+              sequence="25"/>
+
+    <menuitem id="menu_tds_employee_tax_profile_item"
+              name="Employee Tax Profiles"
+              parent="menu_tds_tax_declarations_root"
+              action="action_tds_employee_tax_regime"
+              sequence="10"/>
+
+    <menuitem id="menu_tds_employee_income_declaration_item"
+              name="Income Declarations (Regime Neutral)"
+              parent="menu_tds_tax_declarations_root"
+              action="action_tds_employee_income_declaration"
+              sequence="15"/>
+
+    <menuitem id="menu_tds_employee_declaration_item"
+              name="Deduction Declarations"
+              parent="menu_tds_tax_declarations_root"
+              action="action_tds_employee_declaration_all"
+              sequence="20"/>
+
+    <menuitem id="menu_tds_employee_declaration_approval_item"
+              name="Declaration Approvals"
+              parent="menu_tds_tax_declarations_root"
+              action="action_tds_employee_declaration_approval"
+              sequence="30"/>
+
+</odoo>
+

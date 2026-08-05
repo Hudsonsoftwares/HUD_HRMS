@@ -131,9 +131,23 @@
             <field name="active" eval="True"/>
         </record>
 
+        <!-- Enterprise Statutory TDS Rule (Thin HrPayslip API Delegated) -->
+        <record id="hds_in_rule_tds" model="hr.salary.rule">
+            <field name="name">Tax Deducted at Source (TDS)</field>
+            <field name="sequence" eval="190"/>
+            <field name="code">HDS_IN_TDS</field>
+            <field name="category_id" ref="hr_payroll_community.DED"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute"><![CDATA[result = payslip_record.hds_in_compute_tds()]]></field>
+            <field name="appears_on_payslip" eval="True"/>
+            <field name="active" eval="True"/>
+        </record>
+
         <!-- Wire Rules into Structure -->
         <record id="hr_payroll_community.structure_base" model="hr.payroll.structure">
-            <field name="rule_ids" eval="[(4, ref('hds_in_rule_epf')), (4, ref('hds_in_rule_epf_er')), (4, ref('hds_in_rule_eps')), (4, ref('hds_in_rule_epf_share')), (4, ref('hds_in_rule_edli')), (4, ref('hds_in_rule_epf_admin')), (4, ref('hds_in_rule_edli_admin')), (4, ref('hds_in_rule_bonus'))]"/>
+            <field name="rule_ids" eval="[(4, ref('hds_in_rule_epf')), (4, ref('hds_in_rule_epf_er')), (4, ref('hds_in_rule_eps')), (4, ref('hds_in_rule_epf_share')), (4, ref('hds_in_rule_edli')), (4, ref('hds_in_rule_epf_admin')), (4, ref('hds_in_rule_edli_admin')), (4, ref('hds_in_rule_bonus')), (4, ref('hds_in_rule_tds'))]"/>
         </record>
     </data>
 </odoo>
+

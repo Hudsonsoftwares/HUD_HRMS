@@ -101,10 +101,11 @@
         </field>
     </record>
 
-    <!-- Menu Item for PT Period Schedules under Payroll Configuration -->
+    <!-- Menu Item for PT Period Schedules under Professional Tax Configuration -->
     <menuitem id="menu_pt_period_schedule"
               name="PT Period Schedules"
-              parent="hr_payroll_community.menu_hr_payroll_global_settings"
+              parent="menu_hds_in_pt_configuration"
               action="action_pt_period_schedule"
-              sequence="31"/>
+              sequence="20"/>
+
 </odoo>
