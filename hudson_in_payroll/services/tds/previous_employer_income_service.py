@@ -32,10 +32,9 @@ class PreviousEmployerIncomeService(BaseStatutoryService):
         :param financial_year: tds.financial.year record
         :return: PreviousEmployerIncomeResult
         """
-        inc_decl = self.env['tds.employee.income.declaration'].search([
+        inc_decl = self.env['tds.employee.income.declaration'].sudo().search([
             ('employee_id', '=', employee.id),
             ('financial_year_id', '=', financial_year.id),
-            ('state', 'in', ['submitted', 'approved'])
         ], limit=1)
 
         if not inc_decl:

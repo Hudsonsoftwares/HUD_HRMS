@@ -229,6 +229,59 @@ class HrEmployee(models.Model):
             'context': {'default_employee_id': self.id},
         }
 
+    def action_open_tax_declaration_dashboard(self):
+        """
+        Smart Button Action on Employee Profile ('Tax Declarations').
+        Opens the Employee Self-Service Tax Declaration Dashboard for active Financial Year.
+        Auto-resolves/creates tds.employee.declaration record for (employee_id, financial_year_id).
+        """
+        self.ensure_one()
+        today = fields.Date.today()
+        fy = self.company_id.hds_in_default_tax_year or self.env['tds.financial.year'].search([
+            ('start_date', '<=', today),
+            ('end_date', '>=', today),
+            ('active', '=', True),
+            ('is_closed', '=', False)
+        ], limit=1)
+
+        if not fy:
+            raise ValidationError(_("No active Financial Year configuration exists. Please contact HR to set up the Financial Year."))
+
+        decl = self.env['tds.employee.declaration'].sudo().search([
+            ('employee_id', '=', self.id),
+            ('financial_year_id', '=', fy.id)
+        ], limit=1)
+
+        if not decl:
+            decl = self.env['tds.employee.declaration'].sudo().create({
+                'employee_id': self.id,
+                'financial_year_id': fy.id,
+                'state': 'draft',
+            })
+
+        # Also ensure regime choice and income declaration records exist
+        inc_decl = self.env['tds.employee.income.declaration'].sudo().search([
+            ('employee_id', '=', self.id),
+            ('financial_year_id', '=', fy.id)
+        ], limit=1)
+        if not inc_decl:
+            self.env['tds.employee.income.declaration'].sudo().create({
+                'employee_id': self.id,
+                'financial_year_id': fy.id,
+            })
+
+        view_id = self.env.ref('hudson_in_payroll.tds_employee_declaration_view_dashboard_form', raise_if_not_found=False)
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Employee Tax Declaration Dashboard'),
+            'res_model': 'tds.employee.declaration',
+            'res_id': decl.id,
+            'view_mode': 'form',
+            'views': [(view_id.id if view_id else False, 'form')],
+            'target': 'current',
+        }
+
     # =========================================================================
     # INCOME TAX (TDS) PROFILE FIELDS
     # =========================================================================
@@ -255,25 +308,33 @@ class HrEmployee(models.Model):
     hds_in_prev_taxable_gross = fields.Monetary(
         string="Previous Employer Taxable Salary (₹)",
         currency_field='currency_id',
-        default=0.0,
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False,
         help="Gross taxable salary earned from previous employer during current financial year."
     )
     hds_in_prev_tds_deducted = fields.Monetary(
         string="Previous Employer TDS Deducted (₹)",
         currency_field='currency_id',
-        default=0.0,
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False,
         help="Total TDS tax deducted by previous employer during current financial year."
     )
     hds_in_prev_pt_deducted = fields.Monetary(
         string="Previous Employer PT Deducted (₹)",
         currency_field='currency_id',
-        default=0.0,
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False,
         help="Professional Tax deducted by previous employer during current financial year."
     )
     hds_in_prev_employer_pf = fields.Monetary(
         string="Previous Employer EPF (₹)",
         currency_field='currency_id',
-        default=0.0,
+        compute='_compute_current_income_decl',
+        inverse='_inverse_current_income_decl',
+        store=False,
         help="Employer EPF contribution at previous employer during current financial year."
     )
     hds_in_prev_employer_nps = fields.Monetary(
@@ -326,6 +387,74 @@ class HrEmployee(models.Model):
         compute='_compute_hds_in_tax_regime_count'
     )
 
+    def _compute_hds_in_tax_regime_count(self):
+        for emp in self:
+            emp.hds_in_tax_regime_count = self.env['tds.employee.tax.regime'].search_count([
+                ('employee_id', '=', emp.id)
+            ])
+
+    def action_view_tax_regimes(self):
+        """
+        Smart Button Action on Employee Profile ('Tax Regimes').
+        Auto-resolves current active Financial Year and opens/creates the tds.employee.tax.regime
+        record for (employee_id, financial_year_id), defaulting to system default regime if new.
+        """
+        self.ensure_one()
+        today = fields.Date.today()
+        fy = self.company_id.hds_in_default_tax_year or self.env['tds.financial.year'].search([
+            ('start_date', '<=', today),
+            ('end_date', '>=', today),
+            ('active', '=', True),
+            ('is_closed', '=', False)
+        ], limit=1)
+
+        if not fy:
+            raise ValidationError(_("No active Financial Year configuration exists. Please configure the default Tax Year in settings."))
+
+        reg_records = self.env['tds.employee.tax.regime'].sudo().search([
+            ('employee_id', '=', self.id),
+        ])
+
+        active_reg_record = reg_records.filtered(lambda r: r.financial_year_id == fy)
+
+        if not active_reg_record:
+            default_regime = self.env['tds.tax.regime'].search([('is_default', '=', True)], limit=1) or self.env['tds.tax.regime'].search([], limit=1)
+            active_reg_record = self.env['tds.employee.tax.regime'].sudo().create({
+                'employee_id': self.id,
+                'financial_year_id': fy.id,
+                'regime_id': default_regime.id if default_regime else False,
+            })
+            reg_records = self.env['tds.employee.tax.regime'].sudo().search([
+                ('employee_id', '=', self.id),
+            ])
+
+        if len(reg_records) == 1:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Financial Year Tax Selection'),
+                'res_model': 'tds.employee.tax.regime',
+                'res_id': active_reg_record.id,
+                'view_mode': 'form',
+                'target': 'current',
+                'context': {
+                    'default_employee_id': self.id,
+                    'default_financial_year_id': fy.id,
+                }
+            }
+        else:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Financial Year Tax Selections'),
+                'res_model': 'tds.employee.tax.regime',
+                'view_mode': 'list,form',
+                'domain': [('employee_id', '=', self.id)],
+                'target': 'current',
+                'context': {
+                    'default_employee_id': self.id,
+                    'default_financial_year_id': fy.id,
+                }
+            }
+
     hds_in_current_fy_id = fields.Many2one(
         'tds.financial.year',
         string="Financial Year",
@@ -348,9 +477,10 @@ class HrEmployee(models.Model):
         help="Boolean indicator true if employee has selected New Tax Regime for current FY."
     )
 
+    @api.depends_context('company')
     def _compute_current_fy_regime(self):
         today = fields.Date.today()
-        default_fy_fallback = self.env['tds.financial.year'].search([
+        default_fy_fallback = self.env['tds.financial.year'].sudo().search([
             ('start_date', '<=', today),
             ('end_date', '>=', today),
             ('active', '=', True),
@@ -362,7 +492,7 @@ class HrEmployee(models.Model):
             fy = company.hds_in_default_tax_year or default_fy_fallback
             emp.hds_in_current_fy_id = fy
             if fy and emp.id:
-                rec = self.env['tds.employee.tax.regime'].search([
+                rec = self.env['tds.employee.tax.regime'].sudo().search([
                     ('employee_id', '=', emp.id),
                     ('financial_year_id', '=', fy.id)
                 ], limit=1)
@@ -375,7 +505,7 @@ class HrEmployee(models.Model):
 
     def _inverse_current_tax_regime(self):
         today = fields.Date.today()
-        default_fy_fallback = self.env['tds.financial.year'].search([
+        default_fy_fallback = self.env['tds.financial.year'].sudo().search([
             ('start_date', '<=', today),
             ('end_date', '>=', today),
             ('active', '=', True),
@@ -389,18 +519,26 @@ class HrEmployee(models.Model):
                 raise ValidationError(_("No active Financial Year configuration exists. Please configure Default Tax Year under Payroll Settings or generate the active Financial Year using the Roll-Over Wizard."))
 
             if emp.hds_in_current_tax_regime_id and emp.id:
-                rec = self.env['tds.employee.tax.regime'].search([
+                rec = self.env['tds.employee.tax.regime'].sudo().search([
                     ('employee_id', '=', emp.id),
                     ('financial_year_id', '=', fy.id)
                 ], limit=1)
                 if rec:
-                    rec.write({'regime_id': emp.hds_in_current_tax_regime_id.id})
+                    rec.sudo().write({'regime_id': emp.hds_in_current_tax_regime_id.id})
                 else:
-                    self.env['tds.employee.tax.regime'].create({
+                    self.env['tds.employee.tax.regime'].sudo().create({
                         'employee_id': emp.id,
                         'financial_year_id': fy.id,
                         'regime_id': emp.hds_in_current_tax_regime_id.id,
                     })
+
+                # Also sync tax declaration header if it exists
+                decl = self.env['tds.employee.declaration'].sudo().search([
+                    ('employee_id', '=', emp.id),
+                    ('financial_year_id', '=', fy.id)
+                ], limit=1)
+                if decl:
+                    decl.sudo().write({'tax_regime_id': emp.hds_in_current_tax_regime_id.id})
 
 
     # Section 3: Income Declaration Helper Fields (Mapped to tds.employee.income.declaration)
@@ -496,6 +634,10 @@ class HrEmployee(models.Model):
                     emp.hds_in_municipal_taxes_paid = decl.municipal_taxes_paid
                     emp.hds_in_let_out_interest_paid = decl.let_out_interest_paid
                     emp.hds_in_net_house_property_income_loss = decl.net_house_property_income_loss
+                    emp.hds_in_prev_taxable_gross = decl.prev_employer_taxable_gross
+                    emp.hds_in_prev_tds_deducted = decl.prev_employer_tds
+                    emp.hds_in_prev_pt_deducted = decl.prev_employer_pt
+                    emp.hds_in_prev_employer_pf = decl.prev_employer_pf
                 else:
                     emp.hds_in_savings_bank_interest = 0.0
                     emp.hds_in_fixed_deposit_interest = 0.0
@@ -506,6 +648,10 @@ class HrEmployee(models.Model):
                     emp.hds_in_municipal_taxes_paid = 0.0
                     emp.hds_in_let_out_interest_paid = 0.0
                     emp.hds_in_net_house_property_income_loss = 0.0
+                    emp.hds_in_prev_taxable_gross = 0.0
+                    emp.hds_in_prev_tds_deducted = 0.0
+                    emp.hds_in_prev_pt_deducted = 0.0
+                    emp.hds_in_prev_employer_pf = 0.0
             else:
                 emp.hds_in_savings_bank_interest = 0.0
                 emp.hds_in_fixed_deposit_interest = 0.0
@@ -516,10 +662,14 @@ class HrEmployee(models.Model):
                 emp.hds_in_municipal_taxes_paid = 0.0
                 emp.hds_in_let_out_interest_paid = 0.0
                 emp.hds_in_net_house_property_income_loss = 0.0
+                emp.hds_in_prev_taxable_gross = 0.0
+                emp.hds_in_prev_tds_deducted = 0.0
+                emp.hds_in_prev_pt_deducted = 0.0
+                emp.hds_in_prev_employer_pf = 0.0
 
     def _inverse_current_income_decl(self):
         today = fields.Date.today()
-        fy = self.env['tds.financial.year'].search([
+        fy = self.env['tds.financial.year'].sudo().search([
             ('start_date', '<=', today),
             ('end_date', '>=', today),
             ('active', '=', True),
@@ -529,33 +679,45 @@ class HrEmployee(models.Model):
         if not fy:
             return
 
+        income_fields_map = {
+            'hds_in_savings_bank_interest': 'savings_bank_interest',
+            'hds_in_fixed_deposit_interest': 'fixed_deposit_interest',
+            'hds_in_dividend_income': 'dividend_income',
+            'hds_in_other_sources_income': 'other_sources_income',
+            'hds_in_annual_let_out_rent': 'annual_let_out_rent',
+            'hds_in_municipal_taxes_paid': 'municipal_taxes_paid',
+            'hds_in_let_out_interest_paid': 'let_out_interest_paid',
+            'hds_in_prev_taxable_gross': 'prev_employer_taxable_gross',
+            'hds_in_prev_tds_deducted': 'prev_employer_tds',
+            'hds_in_prev_pt_deducted': 'prev_employer_pt',
+            'hds_in_prev_employer_pf': 'prev_employer_pf',
+        }
+
         for emp in self:
             if emp.id:
-                decl = self.env['tds.employee.income.declaration'].search([
+                decl = self.env['tds.employee.income.declaration'].sudo().search([
                     ('employee_id', '=', emp.id),
                     ('financial_year_id', '=', fy.id)
                 ], limit=1)
-                vals = {
-                    'savings_bank_interest': emp.hds_in_savings_bank_interest,
-                    'fixed_deposit_interest': emp.hds_in_fixed_deposit_interest,
-                    'dividend_income': emp.hds_in_dividend_income,
-                    'other_sources_income': emp.hds_in_other_sources_income,
-                    'annual_let_out_rent': emp.hds_in_annual_let_out_rent,
-                    'municipal_taxes_paid': emp.hds_in_municipal_taxes_paid,
-                    'let_out_interest_paid': emp.hds_in_let_out_interest_paid,
-                    'prev_employer_taxable_gross': emp.hds_in_prev_taxable_gross,
-                    'prev_employer_tds': emp.hds_in_prev_tds_deducted,
-                    'prev_employer_pt': emp.hds_in_prev_pt_deducted,
-                    'prev_employer_pf': emp.hds_in_prev_employer_pf,
-                }
                 if decl:
-                    decl.write(vals)
+                    vals = {}
+                    for emp_f, decl_f in income_fields_map.items():
+                        val = getattr(emp, emp_f, False)
+                        if val is False or val is None:
+                            continue
+                        val = float(val)
+                        decl_val = float(getattr(decl, decl_f, 0.0) or 0.0)
+                        if abs(val - decl_val) > 0.001:
+                            vals[decl_f] = val
+                    if vals:
+                        decl.sudo().write(vals)
                 else:
+                    vals = {decl_f: float(getattr(emp, emp_f, 0.0) or 0.0) for emp_f, decl_f in income_fields_map.items()}
                     vals.update({
                         'employee_id': emp.id,
                         'financial_year_id': fy.id,
                     })
-                    self.env['tds.employee.income.declaration'].create(vals)
+                    self.env['tds.employee.income.declaration'].sudo().create(vals)
 
     # -------------------------------------------------------------------------
     # SECTION 4: DEDUCTION DECLARATION HELPER FIELDS (Old Regime Only)
@@ -716,9 +878,12 @@ class HrEmployee(models.Model):
                         elif cat == '80d_preventive': emp.hds_in_decl_80d_preventive += amt
                         elif cat == 'hra':
                             emp.hds_in_decl_hra_annual_rent += amt
-                            if line.landlord_name: emp.hds_in_decl_hra_landlord_name = line.landlord_name
-                            if line.landlord_pan: emp.hds_in_decl_hra_landlord_pan = line.landlord_pan
-                            emp.hds_in_decl_hra_is_metro = line.is_metro
+                            landlord_name = getattr(line.declaration_id, 'decl_hra_landlord_name', False) or getattr(line, 'landlord_name', False)
+                            landlord_pan = getattr(line.declaration_id, 'decl_hra_landlord_pan', False) or getattr(line, 'landlord_pan', False)
+                            is_metro = getattr(line.declaration_id, 'decl_hra_is_metro', False) or getattr(line, 'is_metro', False)
+                            if landlord_name: emp.hds_in_decl_hra_landlord_name = landlord_name
+                            if landlord_pan: emp.hds_in_decl_hra_landlord_pan = landlord_pan
+                            emp.hds_in_decl_hra_is_metro = is_metro
                         elif cat == '24b': emp.hds_in_decl_24b_self_interest += amt
                         elif cat == '80tta': emp.hds_in_decl_80tta_interest += amt
                         elif cat == '80ttb': emp.hds_in_decl_80ttb_interest += amt
@@ -755,12 +920,12 @@ class HrEmployee(models.Model):
         for emp in self:
             if not emp.id:
                 continue
-            decl = self.env['tds.employee.declaration'].search([
+            decl = self.env['tds.employee.declaration'].sudo().search([
                 ('employee_id', '=', emp.id),
                 ('financial_year_id', '=', fy.id)
             ], limit=1)
             if not decl:
-                decl = self.env['tds.employee.declaration'].create({
+                decl = self.env['tds.employee.declaration'].sudo().create({
                     'employee_id': emp.id,
                     'financial_year_id': fy.id,
                 })

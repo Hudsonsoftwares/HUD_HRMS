@@ -23,6 +23,9 @@ from . import tds_employee_tax_regime
 from . import tds_employee_declaration
 from . import tds_employee_declaration_line
 from . import tds_employee_income_declaration
+from . import tds_employee_80c_declaration
+from . import tds_employee_80d_declaration
+from . import tds_employee_hra_declaration
 
 
 

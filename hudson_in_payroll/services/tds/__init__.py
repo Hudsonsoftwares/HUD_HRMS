@@ -5,6 +5,7 @@ from . import section_80eea_eligibility_service
 from . import section10_hra_exemption_service
 from . import section10_lta_exemption_service
 from . import employee_tax_declaration_validation_service
+from . import eligibility_rule_engine_service
 from . import salary_projection_service
 from . import payroll_income_projection_service
 from . import previous_employer_income_service

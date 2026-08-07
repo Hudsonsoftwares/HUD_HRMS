@@ -123,11 +123,46 @@ class DeductionCalculationService(BaseStatutoryService):
                 if not line.is_regime_permitted:
                     continue
                 cat = line.category
-                amt = line.approved_amount or 0.0
+                amt = line.usable_amount
 
                 if regime_code == 'old':
                     if cat == 'hra':
-                        hra_exemption += amt
+                        # Section 10(13A) HRA Exemption least-of-three calculation
+                        from .salary_projection_service import SalaryProjectionService
+                        sal_proj_svc = SalaryProjectionService(self.env)
+                        sal_res = sal_proj_svc.project_salary(employee, financial_year, eval_date=eval_date)
+
+                        annual_basic_salary = (sal_res.total_basic or 0.0) + (sal_res.total_da or 0.0)
+                        actual_hra_received = sal_res.total_hra or 0.0
+                        annual_rent_paid = float(decl.decl_hra_annual_rent or line.usable_amount or 0.0)
+                        is_metro = bool(decl.decl_hra_is_metro)
+
+                        # Mandatory input availability checks
+                        missing_inputs = []
+                        if annual_basic_salary <= 0.0: missing_inputs.append("Annual Basic Salary (+ DA)")
+                        if actual_hra_received <= 0.0: missing_inputs.append("Actual HRA Received")
+                        if annual_rent_paid <= 0.0: missing_inputs.append("Annual Rent Paid")
+
+                        if missing_inputs:
+                            _logger.warning(
+                                "[HRA EXEMPTION WARNING] Mandatory HRA calculation input(s) unavailable or zero: %s for Employee '%s'. HRA Exemption evaluated as ₹0.00.",
+                                ", ".join(missing_inputs), employee.name if employee else "N/A"
+                            )
+
+                        hra_svc = Section10HraExemptionService(self.env)
+                        hra_res = hra_svc.calculate_exemption(
+                            annual_rent_paid=annual_rent_paid,
+                            actual_hra_received=actual_hra_received,
+                            annual_basic_salary=annual_basic_salary,
+                            is_metro=is_metro,
+                            eval_date=eval_date,
+                            employee=employee,
+                            financial_year=financial_year,
+                            declaration=decl,
+                            annual_basic_component=sal_res.total_basic,
+                            annual_da_component=sal_res.total_da
+                        )
+                        hra_exemption += hra_res.exempt_amount
                     elif cat == '80ccd2':
                         employer_nps_80ccd2 += amt
                     elif cat == '57iia':
@@ -154,6 +189,13 @@ class DeductionCalculationService(BaseStatutoryService):
                 standard_deduction + employer_nps_80ccd2 +
                 family_pension_57iia + other_approved_deductions
             )
+
+        _logger.info(
+            "[TDS TRACE] Phase: Deduction Calculation | Service: DeductionCalculationService | Record ID: %s | Employee: %s | FY: %s | Field: total_allowable_deductions | Old Value: N/A | New Value: ₹%s | Target Model: hr.payslip.line | DB Read: True | Calculation Result: StdDeduction=₹%s, Chapter6A=₹%s, HRAExemption=₹%s, HomeLoan24b=₹%s, Total=₹%s (Decl State: %s)",
+            decl.id if decl else 'N/A', employee.name if employee else 'N/A', financial_year.name if financial_year else 'N/A',
+            total_allowable_deductions, standard_deduction, total_chapter_6a, hra_exemption, home_loan_24b, total_allowable_deductions,
+            decl.state if decl else 'no_declaration'
+        )
 
         summary_log = f"""
 ========================================================

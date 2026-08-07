@@ -82,8 +82,8 @@ class TdsOrchestrationEngine(BaseStatutoryService):
         projection_svc = AnnualIncomeProjectionService(self.env)
         annual_projection = projection_svc.project_annual_income(employee, eval_date=eval_date)
         _logger.warning(
-            "After AnnualIncomeProjectionService | Gross Payroll Income: %s, Previous Employer Income: %s, Other Income: %s, Gross Total Income: %s",
-            annual_projection.projected_annual_salary,
+            "After AnnualIncomeProjectionService | Current Employer Salary: %s, Previous Employer Income: %s, Other Income: %s, Gross Total Income: %s",
+            annual_projection.current_employer_salary,
             annual_projection.previous_employer_income.taxable_salary,
             annual_projection.other_income_aggregation.total_other_income,
             annual_projection.gross_total_income
@@ -199,6 +199,12 @@ class TdsOrchestrationEngine(BaseStatutoryService):
             monthly_tds.current_month_tds
         )
 
+        c6a_obj = getattr(deduction_calc, 'chapter_6a_deductions', None)
+        sec_80c_val = getattr(c6a_obj, 'section_80c', 0.0) if c6a_obj else 0.0
+        sec_80ccd1b_val = getattr(c6a_obj, 'section_80ccd1b', 0.0) if c6a_obj else 0.0
+        sec_80d_val = getattr(c6a_obj, 'section_80d', 0.0) if c6a_obj else 0.0
+        total_c6a_val = deduction_calc.total_chapter_6a if hasattr(deduction_calc, 'total_chapter_6a') else 0.0
+
         summary_report = f"""
 ========================================================
 HUDSON PAYROLL TDS COMPUTATION SUMMARY
@@ -212,41 +218,59 @@ Other Income               : ₹{annual_projection.other_income_aggregation.tota
 Gross Total Income         : ₹{annual_projection.gross_total_income:,.2f}
 
 Standard Deduction         : ₹{deduction_calc.standard_deduction:,.2f}
-80C                        : ₹{getattr(deduction_calc, 'chapter_6a_deductions', 0.0):,.2f}
-80CCD(1B)                  : ₹0.00
-80D                        : ₹0.00
+Section 80C Deductions     : ₹{sec_80c_val:,.2f}
+Section 80CCD(1B) NPS      : ₹{sec_80ccd1b_val:,.2f}
+Section 80D Medical        : ₹{sec_80d_val:,.2f}
+Total Chapter VI-A         : ₹{total_c6a_val:,.2f}
 HRA Exemption              : ₹{deduction_calc.hra_exemption:,.2f}
-Home Loan                  : ₹{deduction_calc.home_loan_interest_24b:,.2f}
+Home Loan Sec 24(b)        : ₹{deduction_calc.home_loan_interest_24b:,.2f}
 
-Total Deductions           : ₹{deduction_calc.total_allowable_deductions:,.2f}
+Total Allowable Deductions : ₹{deduction_calc.total_allowable_deductions:,.2f}
 
-Taxable Income             : ₹{taxable_inc.net_taxable_income:,.2f}
+Net Taxable Income         : ₹{taxable_inc.net_taxable_income:,.2f}
 
-Base Tax                   : ₹{slab_calc.base_tax_liability:,.2f}
-
-87A Rebate                 : ₹{rebate_calc.rebate_applied:,.2f}
-
+Base Tax Liability         : ₹{slab_calc.base_tax_liability:,.2f}
+Section 87A Rebate        : ₹{rebate_calc.rebate_applied:,.2f}
 Tax After Rebate           : ₹{rebate_calc.tax_after_rebate:,.2f}
-
-Surcharge                  : ₹{surcharge_calc.surcharge_amount:,.2f}
-
+Surcharge Amount           : ₹{surcharge_calc.surcharge_amount:,.2f}
 Health & Education Cess    : ₹{cess_calc.cess_amount:,.2f}
 
-Final Annual Tax           : ₹{cess_calc.total_annual_tax_liability:,.2f}
+Final Annual Tax Liability : ₹{cess_calc.total_annual_tax_liability:,.2f}
 
 Previous Employer TDS      : ₹{monthly_tds.prev_employer_tds:,.2f}
-
-Current FY TDS             : ₹{monthly_tds.ytd_tds_deducted:,.2f}
-
-Remaining Tax Liability    : ₹{monthly_tds.remaining_annual_tax_liability:,.2f}
-
+Current FY YTD TDS         : ₹{monthly_tds.ytd_tds_deducted:,.2f}
+Remaining Annual Liability : ₹{monthly_tds.remaining_annual_tax_liability:,.2f}
 Remaining Payroll Periods  : {monthly_tds.remaining_payroll_periods}
 
-Current Month TDS          : ₹{monthly_tds.current_month_tds:,.2f}
+CURRENT MONTH TDS WITHHELD : ₹{monthly_tds.current_month_tds:,.2f}
 
 ========================================================
 """
         _logger.warning(summary_report)
+
+        # Create static audit snapshot entry for historical & compliance auditing
+        if 'hds.in.payroll.audit' in self.env:
+            decl = self.env['tds.employee.declaration'].sudo().search([
+                ('employee_id', '=', employee.id),
+                ('financial_year_id', '=', financial_year_id)
+            ], limit=1)
+            decl_amt = decl.total_declared_amount if decl else 0.0
+            app_amt = decl.total_approved_amount if decl else 0.0
+            self.env['hds.in.payroll.audit'].sudo().create({
+                'employee_id': employee.id,
+                'company_id': employee.company_id.id if employee.company_id else self.env.company.id,
+                'statutory_module': 'tds',
+                'rule_code': 'TDS_SNAPSHOT',
+                'calculation_date': eval_date,
+                'messages': (
+                    f"TDS Payroll Calculation Audit Snapshot | Employee: {employee.name} | FY: {financial_year.name} | "
+                    f"Declared Amount: ₹{decl_amt:,.2f} | Approved Amount: ₹{app_amt:,.2f} | "
+                    f"Eligible Deduction Used: ₹{deduction_calc.total_approved_deductions:,.2f} | "
+                    f"Taxable Income Used: ₹{taxable_inc.net_taxable_income:,.2f} | "
+                    f"Annual Tax Used: ₹{cess_calc.total_annual_tax_liability:,.2f}"
+                ),
+                'status': 'success',
+            })
 
 
         return TdsComputationResult(

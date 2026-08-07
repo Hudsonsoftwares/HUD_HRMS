@@ -152,21 +152,34 @@ class SalaryProjectionService(BaseStatutoryService):
         ytd_bonus = 0.0
         ytd_allowances = 0.0
 
+        # Explicitly defined summary rule codes and categories to exclude from YTD component aggregation
+        EXCLUDED_SUMMARY_CODES = {'GROSS', 'NET', 'PF_WAGE', 'TOTAL', 'ESIC_WAGE', 'EPF_ADMIN', 'EDLI_ADMIN', 'ESI_WAGE'}
+        EXCLUDED_SUMMARY_CATEGORIES = {'GROSS', 'NET', 'COMP', 'DED'}
+
         for slip in payslips:
             for line in slip.line_ids:
                 code = (line.code or '').upper()
+                cat_code = (line.category_id.code or '').upper() if line.category_id else ''
                 amt = line.total or 0.0
+
+                # 1. Skip summary rules and non-earning category lines
+                if cat_code in EXCLUDED_SUMMARY_CATEGORIES or code in EXCLUDED_SUMMARY_CODES:
+                    continue
+
+                # 2. Accumulate specific earning components
                 if code in ('BASIC', 'BASIC_PAY'):
                     ytd_basic += amt
                 elif code in ('DA', 'DEARNESS_ALLOWANCE'):
                     ytd_da += amt
                 elif code in ('HRA', 'HOUSE_RENT_ALLOWANCE'):
                     ytd_hra += amt
-                elif code in ('BONUS', 'INCENTIVE'):
+                elif code in ('BONUS', 'INCENTIVE', 'COMMISSION', 'OVERTIME', 'ARREARS'):
                     ytd_bonus += amt
-                elif line.category_id.code in ('ALW', 'GROSS'):
-                    if code not in ('BASIC', 'BASIC_PAY', 'DA', 'HRA'):
-                        ytd_allowances += amt
+                elif cat_code in ('ALW', 'ALLOWANCE') or cat_code.startswith('ALW'):
+                    ytd_allowances += amt
+                else:
+                    # Generic fallback for any other earning allowance line
+                    ytd_allowances += amt
 
         # Contract / Monthly Wage structure for remaining months projection
         contract = self._get_employee_contract(employee)

@@ -54,24 +54,33 @@ class HomeLoanDeductionService(BaseStatutoryService):
         if decl:
             for line in decl.declaration_line_ids:
                 if line.category == '24b' and line.is_regime_permitted:
-                    sec_24b_amt += line.declared_amount or 0.0
+                    sec_24b_amt += line.usable_amount
 
         sec_24b_approved = min(sec_24b_amt, max_24b_limit)
 
         # 2. Section 80EEA Eligibility Service Invocation
         sec_80eea_approved = 0.0
-        home_loans = self.env['tds.employee.home.loan'].search([
-            ('employee_id', '=', employee.id),
-            ('financial_year_id', '=', financial_year.id)
-        ], limit=1)
+        eea_svc = Section80EEAEligibilityService(self.env)
 
-        if home_loans:
-            eea_svc = Section80EEAEligibilityService(self.env)
-            eea_res = eea_svc.validate_eligibility(home_loans, eval_date=eval_date)
-            if eea_res.is_eligible:
+        if decl and (decl.decl_80eea_interest or decl.decl_80eea_loan_sanction_date):
+            eea_res = eea_svc.validate_eligibility(decl, eval_date=eval_date, regime_code=regime_code, employee=employee, financial_year=financial_year)
+            sec_80eea_approved = eea_res.allowed_deduction
+        else:
+            home_loans = self.env['tds.employee.home.loan'].search([
+                ('employee_id', '=', employee.id),
+                ('financial_year_id', '=', financial_year.id)
+            ], limit=1)
+            if home_loans:
+                eea_res = eea_svc.validate_eligibility(home_loans, eval_date=eval_date, regime_code=regime_code, employee=employee, financial_year=financial_year)
                 sec_80eea_approved = eea_res.allowed_deduction
 
         total_home_loan = sec_24b_approved + sec_80eea_approved
+
+        _logger.info(
+            "[TDS TRACE] Phase: Deduction Calculation | Service: HomeLoanDeductionService | Record ID: %s | Employee: %s | FY: %s | Field: total_home_loan | Old Value: N/A | New Value: ₹%s | Target Model: HomeLoanDeductionResult | DB Read: True | Calculation Result: Sec24b=₹%s, Sec80EEA=₹%s, Total=₹%s (Decl State: %s)",
+            decl.id if decl else 'N/A', employee.name if employee else 'N/A', financial_year.name if financial_year else 'N/A',
+            total_home_loan, sec_24b_approved, sec_80eea_approved, total_home_loan, decl.state if decl else 'N/A'
+        )
 
         return HomeLoanDeductionResult(
             section_24b_self_interest=sec_24b_approved,

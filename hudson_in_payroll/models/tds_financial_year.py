@@ -58,6 +58,23 @@ class TdsFinancialYear(models.Model):
         'financial_year_id',
         string="Surcharge Slabs"
     )
+    is_proof_submission_open = fields.Boolean(
+        string="Proof Submission Window Open",
+        default=False,
+        help="Enable to allow employees to upload investment proof documents for this Financial Year."
+    )
+    proof_submission_start_date = fields.Date(
+        string="Proof Window Start Date",
+        help="Date when HR opens December investment proof window."
+    )
+    proof_submission_end_date = fields.Date(
+        string="Proof Window End Date",
+        help="Date when December investment proof window closes."
+    )
+    declaration_cutoff_date = fields.Date(
+        string="Declaration Cutoff Date",
+        help="Company defined cutoff date for employee investment plan updates."
+    )
 
     _sql_constraints = [
         ('code_unique', 'unique(code)', 'The Financial Year Code must be unique!')
@@ -98,4 +115,27 @@ class TdsFinancialYear(models.Model):
                     'audit_type': 'status_change',
                     'action_taken': f"Financial Year {rec.name} reopened for administrative modifications.",
                 })
+
+    def is_declaration_revision_allowed(self, eval_date=None):
+        """Returns True if investment declaration updates are allowed for this financial year."""
+        self.ensure_one()
+        if self.is_closed:
+            return False
+        eval_date = eval_date or fields.Date.today()
+        if self.declaration_cutoff_date:
+            return eval_date <= self.declaration_cutoff_date
+        return True
+
+    def is_proof_submission_active(self, eval_date=None):
+        """Returns True if the proof submission window is active for this financial year."""
+        self.ensure_one()
+        if self.is_closed:
+            return False
+        if self.is_proof_submission_open:
+            return True
+        eval_date = eval_date or fields.Date.today()
+        if self.proof_submission_start_date and self.proof_submission_end_date:
+            return self.proof_submission_start_date <= eval_date <= self.proof_submission_end_date
+        return eval_date.month in (12, 1)  # Default December - January proof submission window
+
 

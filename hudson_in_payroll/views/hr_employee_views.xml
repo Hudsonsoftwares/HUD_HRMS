@@ -17,8 +17,18 @@
                 <button name="action_view_tax_regimes"
                         type="object"
                         class="oe_stat_button"
-                        icon="fa-calculator">
+                        icon="fa-list-alt"
+                        groups="hr_payroll_community.group_hr_payroll_community_user">
                     <field name="hds_in_tax_regime_count" widget="statinfo" string="Tax Regimes"/>
+                </button>
+                <button name="action_open_tax_declaration_dashboard"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-calculator">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Tax</span>
+                        <span class="o_stat_text">Declarations</span>
+                    </div>
                 </button>
             </xpath>
 

@@ -45,13 +45,55 @@ class OtherIncomeAggregationService(BaseStatutoryService):
         :param financial_year: tds.financial.year record
         :return: OtherIncomeAggregationResult
         """
-        inc_decl = self.env['tds.employee.income.declaration'].search([
+        inc_decl = self.env['tds.employee.income.declaration'].sudo().search([
             ('employee_id', '=', employee.id),
             ('financial_year_id', '=', financial_year.id),
-            ('state', 'in', ['submitted', 'approved'])
         ], limit=1)
 
+        _logger.warning("========== OTHER INCOME AGGREGATION ==========")
+        _logger.warning(
+            "Employee: %s | FY: %s",
+            employee.name if employee else "Unknown",
+            financial_year.name if financial_year else "Unknown"
+        )
+        _logger.warning(
+            "Declaration Found: %s",
+            inc_decl.id if inc_decl else "None"
+        )
+        _logger.warning(
+            "Savings Interest: %s",
+            inc_decl.savings_bank_interest if inc_decl else 0.0
+        )
+        _logger.warning(
+            "FD Interest: %s",
+            inc_decl.fixed_deposit_interest if inc_decl else 0.0
+        )
+        _logger.warning(
+            "Dividend Income: %s",
+            inc_decl.dividend_income if inc_decl else 0.0
+        )
+        _logger.warning(
+            "Other Misc Income: %s",
+            inc_decl.other_sources_income if inc_decl else 0.0
+        )
+        _logger.warning(
+            "Gross Rent: %s",
+            inc_decl.annual_let_out_rent if inc_decl else 0.0
+        )
+        _logger.warning(
+            "Municipal Tax: %s",
+            inc_decl.municipal_taxes_paid if inc_decl else 0.0
+        )
+        _logger.warning(
+            "Let Out Interest: %s",
+            inc_decl.let_out_interest_paid if inc_decl else 0.0
+        )
+
         if not inc_decl:
+            _logger.warning("Total Other Sources: 0.0")
+            _logger.warning("Net House Property Income/Loss: 0.0")
+            _logger.warning("Total Other Income Returned: 0.0")
+            _logger.warning("=============================================")
             return OtherIncomeAggregationResult(has_declaration=False)
 
         savings_interest = inc_decl.savings_bank_interest or 0.0
@@ -69,6 +111,20 @@ class OtherIncomeAggregationService(BaseStatutoryService):
         net_property = nav - prop_std_ded - let_out_interest
 
         total_other_income = total_other_sources + net_property
+
+        _logger.warning(
+            "Total Other Sources: %s",
+            total_other_sources
+        )
+        _logger.warning(
+            "Net House Property Income/Loss: %s",
+            net_property
+        )
+        _logger.warning(
+            "Total Other Income Returned: %s",
+            total_other_income
+        )
+        _logger.warning("=============================================")
 
         return OtherIncomeAggregationResult(
             savings_interest=savings_interest,

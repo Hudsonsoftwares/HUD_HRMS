@@ -16,6 +16,7 @@
         'security/ir.model.access.csv',
         'security/hds_in_bonus_security.xml',
         'security/hds_in_statutory_report_security.xml',
+        'security/tds_declaration_security.xml',
         'data/hr_salary_rule_category.xml',
         'data/hr_rule_parameters.xml',
         'data/hr_salary_rule_pf.xml',
@@ -41,6 +42,7 @@
         'views/res_config_settings_views.xml',
         'wizard/tds_financial_year_wizard_views.xml',
         'views/tds_configuration_views.xml',
+        'views/tds_section_declaration_views.xml',
         'views/tds_declaration_views.xml',
 
 

@@ -32,6 +32,11 @@ class AnnualIncomeProjectionResult:
         self.gross_total_income = gross_total_income
         self.regime_context = regime_context
 
+    @property
+    def current_employer_salary(self):
+        """Current employer projected annual salary."""
+        return self.salary_projection.total_projected_current_salary if self.salary_projection else 0.0
+
 
 class AnnualIncomeProjectionService(BaseStatutoryService):
     """
@@ -49,21 +54,62 @@ class AnnualIncomeProjectionService(BaseStatutoryService):
     def resolve_employee_regime(self, employee, financial_year):
         """
         Resolves the employee's selected Tax Regime for the specified Financial Year.
-        Selected regime is retrieved from the authoritative tds.employee.tax.regime record.
+        Selected regime is retrieved from the authoritative tds.employee.tax.regime record,
+        with fallback to tds.employee.declaration header if master record is absent.
         """
+        decl_rec = self.env['tds.employee.declaration'].search([
+            ('employee_id', '=', employee.id),
+            ('financial_year_id', '=', financial_year.id)
+        ], limit=1)
+        ui_regime = decl_rec.tax_regime_id.code if (decl_rec and decl_rec.tax_regime_id) else 'None'
+
         regime_rec = self.env['tds.employee.tax.regime'].search([
             ('employee_id', '=', employee.id),
             ('financial_year_id', '=', financial_year.id)
         ], limit=1)
 
-        if regime_rec and regime_rec.regime_id:
-            return regime_rec.regime_id.code.lower(), regime_rec.regime_id.name
+        found_master = bool(regime_rec and regime_rec.regime_id)
+        regime_rec_id = regime_rec.id if found_master else 'None'
+        
+        reason_default = "N/A"
+        if found_master:
+            resolved_code = regime_rec.regime_id.code.lower()
+            resolved_name = regime_rec.regime_id.name
+        elif decl_rec and decl_rec.tax_regime_id:
+            # Fallback to UI declaration header regime choice if master record absent
+            resolved_code = decl_rec.tax_regime_id.code.lower()
+            resolved_name = decl_rec.tax_regime_id.name
+            reason_default = "Fallback to Declaration Header regime choice because tds.employee.tax.regime master record was un-synchronized."
+        else:
+            default_regime = self.env['tds.tax.regime'].search([('code', '=', 'new')], limit=1)
+            resolved_code = 'new'
+            resolved_name = default_regime.name if default_regime else 'New Tax Regime (Section 115BAC)'
+            reason_default = "No tds.employee.tax.regime master record OR tds.employee.declaration header choice found for (employee_id, financial_year_id); applying Income Tax Act Section 115BAC statutory default."
 
-        # Statutory Default under Income Tax Act Section 115BAC is New Tax Regime
-        default_regime = self.env['tds.tax.regime'].search([('code', '=', 'new')], limit=1)
-        if default_regime:
-            return 'new', default_regime.name
-        return 'new', 'New Tax Regime (Section 115BAC)'
+        _logger.info(
+            "\n==================================================\n"
+            "REGIME RESOLUTION TRACE\n"
+            "==================================================\n"
+            "Employee ID                           : %s (%s)\n"
+            "Financial Year                        : %s (ID: %s)\n"
+            "Declaration ID                        : %s\n"
+            "UI Selected Regime                    : %s\n"
+            "tds.employee.tax.regime record found? : %s\n"
+            "Regime Record ID                      : %s\n"
+            "Resolved Regime Code                  : %s\n"
+            "Reason for defaulting to NEW          : %s\n"
+            "==================================================",
+            employee.id if employee else 'N/A', employee.name if employee else 'N/A',
+            financial_year.name if financial_year else 'N/A', financial_year.id if financial_year else 'N/A',
+            decl_rec.id if decl_rec else 'None',
+            ui_regime,
+            found_master,
+            regime_rec_id,
+            resolved_code.upper(),
+            reason_default
+        )
+
+        return resolved_code, resolved_name
 
     def project_annual_income(self, employee, eval_date=None):
         """
@@ -112,13 +158,15 @@ class AnnualIncomeProjectionService(BaseStatutoryService):
 ========================================================
 ANNUAL INCOME PROJECTION SERVICE
 ========================================================
-Gross Payroll Income      : ₹{current_employer_income:,.2f}
+Current Employer Salary   : ₹{current_employer_income:,.2f}
 Previous Employer Income  : ₹{prev_emp_income:,.2f}
 Other Income              : ₹{other_income_val:,.2f}
-Gross Total Income        : ₹{gross_total_income:,.2f}
+Projected Annual Salary   : ₹{projected_annual_salary:,.2f}
+Gross Total Income (GTI)  : ₹{gross_total_income:,.2f}
 
 Formula:
-GTI = Current Employer Income + Previous Employer Income + Other Income
+Projected Annual Salary = Current Employer Salary + Previous Employer Income
+GTI = Projected Annual Salary + Other Income
 ========================================================
 """
         _logger.warning(summary_log)

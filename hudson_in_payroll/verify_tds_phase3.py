@@ -20,6 +20,7 @@ def test_python_syntax():
         "models/tds_employee_declaration_line.py",
         "models/tds_employee_income_declaration.py",
         "services/tds/employee_tax_declaration_validation_service.py",
+        "services/tds/eligibility_rule_engine_service.py",
         "services/tds/salary_projection_service.py",
         "services/tds/payroll_income_projection_service.py",
         "services/tds/previous_employer_income_service.py",

@@ -34,6 +34,7 @@ from . import test_tds_phase6_tax_computation
 from . import test_tds_phase10_monthly_distribution
 from . import test_tds_phase11_payroll_integration
 from . import test_tds_audit_logging
+from . import test_ess_tax_declaration_dashboard
 
 
 

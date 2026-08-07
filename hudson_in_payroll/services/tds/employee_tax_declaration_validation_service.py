@@ -74,12 +74,13 @@ class EmployeeTaxDeclarationValidationService(BaseStatutoryService):
         age_at_fy_end = relativedelta(fy_end, employee.birthday).years
         return age_at_fy_end >= 60
 
-    def validate_declaration(self, declaration_record, eval_date=None):
+    def validate_declaration(self, declaration_record, regime_code=None, eval_date=None):
 
         """
         Validates an employee declaration header and all underlying declaration line items.
 
         :param declaration_record: tds.employee.declaration recordset
+        :param regime_code: str ('old' or 'new') optional override
         :param eval_date: Date (optional)
         :return: EmployeeDeclarationValidationReport
         """
@@ -88,7 +89,10 @@ class EmployeeTaxDeclarationValidationService(BaseStatutoryService):
         eea_svc = Section80EEAEligibilityService(self.env)
 
         eval_date = eval_date or fields.Date.today()
-        regime_code = (declaration_record.regime_code or 'new').lower()
+        if not regime_code:
+            regime_code = (declaration_record.regime_code or 'new').lower()
+        else:
+            regime_code = regime_code.lower()
         max_80c_ceiling = tds_param_svc.get_80c_limit(eval_date=eval_date)
 
         is_compliant = True
@@ -106,7 +110,7 @@ class EmployeeTaxDeclarationValidationService(BaseStatutoryService):
             # 1. NEW REGIME PROHIBITED CATEGORY ENFORCEMENT
             # -----------------------------------------------------------------
             if regime_code == 'new' and cat in self.NEW_REGIME_DISALLOWED_CATEGORIES:
-                line.write({
+                line.sudo().write({
                     'is_regime_permitted': False,
                     'validation_status': 'ineligible_regime',
                     'approved_amount': 0.0,
@@ -121,7 +125,8 @@ class EmployeeTaxDeclarationValidationService(BaseStatutoryService):
             # 2. OLD REGIME & SHARED CATEGORY STATUTORY VALIDATION
             # -----------------------------------------------------------------
             line.is_regime_permitted = True
-            approved_val = declared_val
+            base_claim = line.approved_amount if (line.approved_amount and line.approved_amount > 0) else declared_val
+            approved_val = min(declared_val, base_claim)
             val_status = 'valid'
             val_remarks = "Statutory deduction verified and valid."
 
@@ -147,28 +152,73 @@ class EmployeeTaxDeclarationValidationService(BaseStatutoryService):
                     declaration_record.financial_year_id,
                     eval_date=eval_date
                 )
-                ceiling = tds_param_svc.get_80d_limit(is_senior=emp_is_senior, is_parents=False, eval_date=eval_date)
+                ceiling = tds_param_svc.get_80d_limit(is_senior=emp_is_senior, is_parents=False, eval_date=eval_date) or 25000.0
+                remaining_self_cap = max(0.0, ceiling - accumulated_80c) # cap check
                 if declared_val > ceiling:
                     approved_val = ceiling
                     val_status = 'exceeds_limit'
                     val_remarks = f"Section 80D (Self {'Senior Citizen' if emp_is_senior else 'Non-Senior'}) claim capped at statutory limit of ₹{ceiling:,.2f}."
-
+                else:
+                    approved_val = declared_val
 
             elif cat == '80d_parents':
                 parent_is_senior = line.is_senior_citizen
-                ceiling = tds_param_svc.get_80d_limit(is_senior=parent_is_senior, is_parents=True, eval_date=eval_date)
+                ceiling = tds_param_svc.get_80d_limit(is_senior=parent_is_senior, is_parents=True, eval_date=eval_date) or 25000.0
                 if declared_val > ceiling:
                     approved_val = ceiling
                     val_status = 'exceeds_limit'
                     val_remarks = f"Section 80D (Parents {'Senior Citizen' if parent_is_senior else 'Non-Senior'}) claim capped at statutory limit of ₹{ceiling:,.2f}."
 
-
             elif cat == '80d_preventive':
-                ceiling = tds_param_svc.get_parameter('80D_PREVENTIVE_CHECKUP_LIMIT', eval_date=eval_date)
-                if declared_val > ceiling:
-                    approved_val = ceiling
+                preventive_sublimit = tds_param_svc.get_parameter('80D_PREVENTIVE_CHECKUP_LIMIT', eval_date=eval_date) or 5000.0
+                emp_is_senior = self._is_employee_senior_citizen_in_fy(
+                    declaration_record.employee_id,
+                    declaration_record.financial_year_id,
+                    eval_date=eval_date
+                )
+                overall_self_ceiling = tds_param_svc.get_80d_limit(is_senior=emp_is_senior, is_parents=False, eval_date=eval_date) or 25000.0
+
+                # 1. Self Medical Insurance lines already declared in this declaration
+                self_insurance_lines = declaration_record.declaration_line_ids.filtered(lambda l: l.category == '80d_self')
+                declared_self_ins = sum(l.declared_amount for l in self_insurance_lines)
+
+                # 2. Apply preventive sub-limit (₹5,000 max)
+                allowed_preventive_sublimit = min(declared_val, preventive_sublimit)
+
+                # 3. Combined Self & Family bucket amount
+                combined_bucket_raw = declared_self_ins + allowed_preventive_sublimit
+
+                # 4. Apply overall Self & Family limit
+                eligible_bucket_deduction = min(combined_bucket_raw, overall_self_ceiling)
+                excess_bucket_amount = max(0.0, combined_bucket_raw - eligible_bucket_deduction)
+
+                # 5. Determine approved amount for this preventive line
+                remaining_overall_cap = max(0.0, overall_self_ceiling - declared_self_ins)
+                approved_val = min(allowed_preventive_sublimit, remaining_overall_cap)
+
+                if declared_val > preventive_sublimit or combined_bucket_raw > overall_self_ceiling:
                     val_status = 'exceeds_limit'
-                    val_remarks = f"Section 80D Preventive Checkup sub-limit capped at ₹{ceiling:,.2f}."
+                    val_remarks = (
+                        f"Section 80D Preventive Check-up capped at ₹{approved_val:,.2f} "
+                        f"(Sub-limit: ₹{preventive_sublimit:,.2f}, Overall Self Ceiling: ₹{overall_self_ceiling:,.2f})."
+                    )
+
+                _logger.info(
+                    "\n========================================\n"
+                    "SECTION 80D BUCKET TRACE\n"
+                    "========================================\n"
+                    "Medical Insurance Amount    : ₹%s\n"
+                    "Preventive Check-up Amount  : ₹%s\n"
+                    "Combined Bucket Amount      : ₹%s\n"
+                    "Preventive Sub-limit Applied: ₹%s\n"
+                    "Overall 80D Limit Applied   : ₹%s\n"
+                    "Eligible Deduction          : ₹%s\n"
+                    "Excess Amount               : ₹%s\n"
+                    "========================================",
+                    f"{declared_self_ins:,.2f}", f"{declared_val:,.2f}", f"{combined_bucket_raw:,.2f}",
+                    f"{preventive_sublimit:,.2f}", f"{overall_self_ceiling:,.2f}",
+                    f"{eligible_bucket_deduction:,.2f}", f"{excess_amount_bucket:,.2f}" if 'excess_amount_bucket' in locals() else f"{excess_bucket_amount:,.2f}"
+                )
 
             elif cat == '80tta':
                 is_emp_senior = self._is_employee_senior_citizen_in_fy(
@@ -258,7 +308,8 @@ class EmployeeTaxDeclarationValidationService(BaseStatutoryService):
 
             elif cat == 'hra':
                 # Landlord PAN Validation Rule (CBDT Circular): Mandatory if annual rent exceeds ₹1,00,000 p.a.
-                if declared_val > 100000.0 and not line.landlord_pan:
+                landlord_pan = getattr(line.declaration_id, 'decl_hra_landlord_pan', False) or getattr(line, 'landlord_pan', False)
+                if declared_val > 100000.0 and not landlord_pan:
                     val_remarks = "Landlord PAN is mandatory under CBDT circulars for annual rent claims exceeding ₹1,00,000 p.a. Please provide Landlord PAN."
                     val_status = 'pending_proof'
                     approved_val = 100000.0
@@ -312,7 +363,8 @@ class EmployeeTaxDeclarationValidationService(BaseStatutoryService):
                     val_status = 'exceeds_limit'
                     val_remarks = f"VRS Compensation Exemption capped at statutory ceiling of ₹{ceiling:,.2f}."
 
-            line.write({
+            line.sudo().write({
+                'is_regime_permitted': True,
                 'approved_amount': approved_val,
                 'validation_status': val_status,
                 'validation_remarks': val_remarks,

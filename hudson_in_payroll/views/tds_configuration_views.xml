@@ -47,7 +47,11 @@
                             <field name="start_date"/>
                             <field name="end_date"/>
                         </group>
-                        <group string="Status">
+                        <group string="Proof Submission Window &amp; Status">
+                            <field name="is_proof_submission_open"/>
+                            <field name="proof_submission_start_date"/>
+                            <field name="proof_submission_end_date"/>
+                            <field name="declaration_cutoff_date"/>
                             <field name="active"/>
                             <field name="is_closed"/>
                         </group>
@@ -408,11 +412,7 @@
               action="action_tds_surcharge"
               sequence="40"/>
 
-    <menuitem id="menu_tds_employee_home_loan"
-              name="Housing Loan &amp; 80EEA"
-              parent="menu_hds_in_tds_configuration"
-              action="action_tds_employee_home_loan"
-              sequence="50"/>
+
 
 </odoo>
 

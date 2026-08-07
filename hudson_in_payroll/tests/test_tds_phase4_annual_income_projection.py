@@ -220,4 +220,99 @@ class TestTdsPhase4AnnualIncomeProjection(TransactionCase):
         with self.assertRaises(ValidationError):
             inc_svc.project_annual_income(False)
 
+    def test_07_regression_annual_projection_remains_constant_across_months(self):
+        """
+        Regression Test: Verify that when monthly gross salary is ₹150,000,
+        the annual salary projection remains exactly ₹18,00,000 for April, May, June, and July,
+        even as prior month payslips transition to 'done' state with BASIC and GROSS rule lines.
+        """
+        from hudson_in_payroll.services.tds.salary_projection_service import SalaryProjectionService
+        salary_svc = SalaryProjectionService(self.env)
+
+        emp = self.env['hr.employee'].create({
+            'name': 'Regression Projection Employee',
+            'birthday': '1992-08-20',
+        })
+        contract = self.env['hr.version'].create({
+            'name': 'Contract Regression Test',
+            'employee_id': emp.id,
+            'wage': 150000.0,
+            'state': 'open',
+            'date_start': '2025-04-01',
+        })
+        emp.contract_id = contract.id
+
+        # April evaluation (0 paid payslips in DB)
+        res_april = salary_svc.project_salary(emp, self.fy, eval_date='2025-04-30')
+        self.assertEqual(res_april.total_projected_current_salary, 1800000.0)
+
+        # Create paid April payslip in DB with BASIC and GROSS lines
+        rule_basic = self.env.ref('hr_payroll_community.hr_rule_basic')
+        rule_gross = self.env['hr.salary.rule'].search([('code', '=', 'GROSS')], limit=1)
+
+        april_slip = self.env['hr.payslip'].create({
+            'name': 'April 2025 Payslip',
+            'employee_id': emp.id,
+            'contract_id': contract.id,
+            'date_from': '2025-04-01',
+            'date_to': '2025-04-30',
+            'state': 'done',
+        })
+        self.env['hr.payslip.line'].create({
+            'slip_id': april_slip.id,
+            'salary_rule_id': rule_basic.id,
+            'employee_id': emp.id,
+            'contract_id': contract.id,
+            'code': 'BASIC',
+            'name': 'Basic Salary',
+            'amount': 150000.0,
+            'quantity': 1.0,
+            'rate': 100.0,
+        })
+        if rule_gross:
+            self.env['hr.payslip.line'].create({
+                'slip_id': april_slip.id,
+                'salary_rule_id': rule_gross.id,
+                'employee_id': emp.id,
+                'contract_id': contract.id,
+                'code': 'GROSS',
+                'name': 'Gross Salary',
+                'amount': 150000.0,
+                'quantity': 1.0,
+                'rate': 100.0,
+            })
+
+        # May evaluation (1 paid payslip in DB)
+        res_may = salary_svc.project_salary(emp, self.fy, eval_date='2025-05-31')
+        self.assertEqual(res_may.total_projected_current_salary, 1800000.0)
+
+        # Create paid May payslip in DB
+        may_slip = self.env['hr.payslip'].create({
+            'name': 'May 2025 Payslip',
+            'employee_id': emp.id,
+            'contract_id': contract.id,
+            'date_from': '2025-05-01',
+            'date_to': '2025-05-31',
+            'state': 'done',
+        })
+        self.env['hr.payslip.line'].create({
+            'slip_id': may_slip.id,
+            'salary_rule_id': rule_basic.id,
+            'employee_id': emp.id,
+            'contract_id': contract.id,
+            'code': 'BASIC',
+            'name': 'Basic Salary',
+            'amount': 150000.0,
+            'quantity': 1.0,
+            'rate': 100.0,
+        })
+
+        # June evaluation (2 paid payslips in DB)
+        res_june = salary_svc.project_salary(emp, self.fy, eval_date='2025-06-30')
+        self.assertEqual(res_june.total_projected_current_salary, 1800000.0)
+
+        # July evaluation (2 paid payslips in DB)
+        res_july = salary_svc.project_salary(emp, self.fy, eval_date='2025-07-31')
+        self.assertEqual(res_july.total_projected_current_salary, 1800000.0)
+
 

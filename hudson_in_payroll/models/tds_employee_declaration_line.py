@@ -106,6 +106,23 @@ class TdsEmployeeDeclarationLine(models.Model):
         default=0.0,
         help="Final statutory deduction allowed after ceiling cap and regime validation."
     )
+    rejected_amount = fields.Monetary(
+        string="Rejected Amount (₹)",
+        currency_field='currency_id',
+        compute='_compute_rejected_amount',
+        store=True,
+        readonly=False,
+        help="Amount rejected by HR during proof document verification."
+    )
+
+    @api.depends('declared_amount', 'approved_amount', 'declaration_id.state')
+    def _compute_rejected_amount(self):
+        for line in self:
+            if line.declaration_id and line.declaration_id.state in ('proof_under_review', 'proof_verified', 'approved'):
+                line.rejected_amount = max(0.0, (line.declared_amount or 0.0) - (line.approved_amount or 0.0))
+            else:
+                line.rejected_amount = 0.0
+
     currency_id = fields.Many2one(
         'res.currency',
         string="Currency",
@@ -161,3 +178,41 @@ class TdsEmployeeDeclarationLine(models.Model):
         }
         for line in self:
             line.section_code = code_map.get(line.category, 'General')
+
+    eligible_amount = fields.Monetary(
+        string="Eligible Deduction (₹)",
+        currency_field='currency_id',
+        compute='_compute_deduction_eligibility',
+        store=False,
+        help="System-calculated allowable statutory deduction computed dynamically on-the-fly."
+    )
+    excess_amount = fields.Monetary(
+        string="Excess / Non-Eligible Amount (₹)",
+        currency_field='currency_id',
+        compute='_compute_deduction_eligibility',
+        store=False,
+        help="Informational non-eligible investment portion exceeding statutory deduction limits."
+    )
+
+    @api.depends('declared_amount', 'approved_amount', 'is_regime_permitted', 'category', 'declaration_id.state', 'regime_code')
+    def _compute_deduction_eligibility(self):
+        from ..services.tds.eligibility_rule_engine_service import EligibilityRuleEngineService
+        engine = EligibilityRuleEngineService(self.env)
+        for line in self:
+            res = engine.evaluate_eligibility(line)
+            line.eligible_amount = res.eligible_deduction
+            line.excess_amount = res.excess_amount
+
+    @property
+    def usable_amount(self):
+        """
+        Statutory usable amount for TDS calculation engines:
+        - Planning Phase (state not in ('proof_verified', 'approved')): eligible_amount
+        - Adjustment Phase (state in ('proof_verified', 'approved')): min(approved_amount, eligible_amount)
+        """
+        if self.declaration_id and self.declaration_id.state in ('proof_verified', 'approved'):
+            if self.approved_amount is not None and self.approved_amount > 0:
+                return min(self.approved_amount, self.eligible_amount if self.eligible_amount else self.approved_amount)
+            return self.eligible_amount or 0.0
+        return self.eligible_amount if self.eligible_amount is not None else (self.declared_amount or 0.0)
+

@@ -81,23 +81,12 @@ class MonthlyTDSDistributionService(BaseStatutoryService):
             else:
                 current_month_tds = round(remaining_annual_tax / remaining_periods, 2)
 
-            summary_log = f"""
-========================================================
-MONTHLY TDS DISTRIBUTION SERVICE
-========================================================
-Annual Tax Liability       : ₹{total_annual_tax_liability:,.2f}
-- Previous Employer TDS    : ₹{prev_employer_tds:,.2f}
-- Current FY TDS Deducted  : ₹{ytd_tds_deducted:,.2f}
-= Remaining Tax Liability  : ₹{remaining_annual_tax:,.2f}
-
-Remaining Payroll Periods  : {remaining_periods}
-
-Formula:
-Current Month TDS = Remaining Liability / Remaining Payroll Periods
-Current Month TDS          : ₹{current_month_tds:,.2f}
-========================================================
-"""
-            _logger.warning(summary_log)
+            _logger.info(
+                "[TDS TRACE] Phase: Monthly Distribution | Service: MonthlyTDSDistributionService | Record ID: %s | Employee: %s | FY: %s | Field: current_month_tds | Old Value: N/A | New Value: ₹%s | Target Model: hr.payslip.line | DB Read: True | Calculation Result: AnnualTax=₹%s, PaidSoFar=₹%s (PrevTDS=₹%s, YTDTDS=₹%s), RemainingTax=₹%s, RemainingPeriods=%s, CurrentMonthTDS=₹%s",
+                employee.id if employee else 'N/A', employee.name if employee else 'N/A', financial_year.name if financial_year else 'N/A',
+                current_month_tds, total_annual_tax_liability, total_tds_paid_so_far, prev_employer_tds, ytd_tds_deducted,
+                remaining_annual_tax, remaining_periods, current_month_tds
+            )
 
             return MonthlyTDSDistributionResult(
                 total_annual_tax_liability=total_annual_tax_liability,
